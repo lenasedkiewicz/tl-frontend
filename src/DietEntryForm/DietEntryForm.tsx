@@ -1,4 +1,3 @@
-// DietEntryForm.tsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -70,7 +69,6 @@ const DietEntryForm: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // If userId changes, fetch that user's entries
     if (name === "userId" && value) {
       fetchUserEntries(value);
     }
@@ -173,7 +171,9 @@ const DietEntryForm: React.FC = () => {
         </Button>
 
         <Snackbar open={!!error || !!success} autoHideDuration={6000}>
-          <Alert severity={error ? "error" : "success"}>{error || success}</Alert>
+          <Alert severity={error ? "error" : "success"}>
+            {error || success}
+          </Alert>
         </Snackbar>
       </form>
 
