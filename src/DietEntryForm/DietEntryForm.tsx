@@ -6,6 +6,7 @@ import {
   Typography,
   CircularProgress,
   Snackbar,
+  Box,
 } from "@mui/material";
 import { Alert } from "@mui/material";
 
@@ -106,9 +107,16 @@ const DietEntryForm: React.FC = () => {
         Diet Tracker
       </Typography>
 
-      <form
+      <Box
+        component="form"
         onSubmit={handleSubmit}
-        className="mb-8 p-4 bg-gray-100 rounded shadow"
+        sx={{
+          mb: 8,
+          p: 4,
+          bgcolor: "grey.100",
+          borderRadius: 1,
+          boxShadow: 1,
+        }}
       >
         <TextField
           type="text"
@@ -119,7 +127,7 @@ const DietEntryForm: React.FC = () => {
           variant="outlined"
           fullWidth
           required
-          className="mb-4"
+          sx={{ my: 4 }}
         />
 
         <TextField
@@ -131,7 +139,7 @@ const DietEntryForm: React.FC = () => {
           variant="outlined"
           fullWidth
           required
-          className="mb-4"
+          sx={{ my: 4 }}
         />
 
         <TextField
@@ -143,7 +151,7 @@ const DietEntryForm: React.FC = () => {
           variant="outlined"
           fullWidth
           required
-          className="mb-4"
+          sx={{ my: 4 }}
         />
 
         <TextField
@@ -157,15 +165,16 @@ const DietEntryForm: React.FC = () => {
           rows={4}
           placeholder="What did you eat today?"
           required
-          className="mb-4"
+          sx={{ my: 4 }}
         />
 
         <Button
           type="submit"
-          variant="contained"
-          color="primary"
+          variant="outlined"
+          color="secondary"
+          size="large"
           disabled={loading}
-          className="mb-4"
+          sx={{ my: 4 }}
         >
           {loading ? "Saving..." : "Save Diet Entry"}
         </Button>
@@ -175,7 +184,7 @@ const DietEntryForm: React.FC = () => {
             {error || success}
           </Alert>
         </Snackbar>
-      </form>
+      </Box>
 
       <div>
         <Typography variant="h2" className="text-xl font-bold mb-2">
