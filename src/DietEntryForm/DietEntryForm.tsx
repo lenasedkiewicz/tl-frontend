@@ -61,7 +61,6 @@ const DietEntryForm: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // If userId changes, fetch that user's entries
     if (name === "userId" && value) {
       fetchUserEntries(value);
     }
