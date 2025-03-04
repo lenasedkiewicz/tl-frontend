@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Typography, Box, Paper, CircularProgress } from "@mui/material";
+import { Typography, Box, Paper, CircularProgress, Alert } from "@mui/material";
 
-interface DietEntries {
+interface DietEntry {
   _id?: string;
   username: string;
   userId: string;
@@ -12,10 +12,10 @@ interface DietEntries {
 
 const API_URL = "http://localhost:5000/api/diet";
 
-const DietEntriesList: React.FC = () => {
-  const [entries, setEntries] = useState<DietEntries[]>([]);
+function DietEntriesList() {
+  const [entries, setEntries] = useState<DietEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
@@ -25,6 +25,8 @@ const DietEntriesList: React.FC = () => {
   const fetchEntries = async () => {
     try {
       setLoading(true);
+      setError(null);
+
       const url = userId ? `${API_URL}/user/${userId}` : API_URL;
 
       const response = await axios.get(url);
@@ -58,6 +60,12 @@ const DietEntriesList: React.FC = () => {
         />
       </Box>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
@@ -85,6 +93,6 @@ const DietEntriesList: React.FC = () => {
       )}
     </Box>
   );
-};
+}
 
 export default DietEntriesList;

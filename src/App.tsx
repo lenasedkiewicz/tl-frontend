@@ -1,5 +1,4 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import {
   Box,
   Drawer,
@@ -14,6 +13,7 @@ import { Add as AddIcon, List as ListIcon } from "@mui/icons-material";
 
 import DietEntriesForm from "./ComponentsDiet/DietEntriesForm";
 import DietEntriesList from "./ComponentsDiet/DietEntriesList";
+
 const drawerWidth = 240;
 
 function App() {
@@ -21,6 +21,8 @@ function App() {
     <Router>
       <Box sx={{ display: "flex" }}>
         <CssBaseline />
+
+        {/* Sidebar Navigation */}
         <Drawer
           sx={{
             width: drawerWidth,
@@ -34,14 +36,30 @@ function App() {
           anchor="left"
         >
           <List>
-            <ListItem button component={Link} to="/add-entry">
+            <ListItem
+              sx={{
+                cursor: "pointer",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
+              }}
+              onClick={() => (window.location.href = "/add-entry")}
+            >
               <ListItemIcon>
                 <AddIcon />
               </ListItemIcon>
               <ListItemText primary="Add Diet Entry" />
             </ListItem>
 
-            <ListItem button component={Link} to="/previous-entries">
+            <ListItem
+              sx={{
+                cursor: "pointer",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
+              }}
+              onClick={() => (window.location.href = "/previous-entries")}
+            >
               <ListItemIcon>
                 <ListIcon />
               </ListItemIcon>
