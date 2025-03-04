@@ -1,6 +1,14 @@
 // DietEntryForm.tsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import {
+  TextField,
+  Button,
+  Typography,
+  CircularProgress,
+  Snackbar,
+} from "@mui/material";
+import { Alert } from "@mui/material";
 
 interface DietEntry {
   _id?: string;
@@ -96,93 +104,103 @@ const DietEntryForm: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4"> Diet Tracker </h1>
+      <Typography variant="h1" className="text-2xl font-bold mb-4">
+        Diet Tracker
+      </Typography>
 
       <form
         onSubmit={handleSubmit}
         className="mb-8 p-4 bg-gray-100 rounded shadow"
       >
-        <div className="mb-4">
-          <label className="block mb-1"> Username: </label>
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
+        <TextField
+          type="text"
+          name="username"
+          label="Username"
+          value={formData.username}
+          onChange={handleChange}
+          variant="outlined"
+          fullWidth
+          required
+          className="mb-4"
+        />
 
-        <div className="mb-4">
-          <label className="block mb-1"> User ID: </label>
-          <input
-            type="text"
-            name="userId"
-            value={formData.userId}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
+        <TextField
+          type="text"
+          name="userId"
+          label="User ID"
+          value={formData.userId}
+          onChange={handleChange}
+          variant="outlined"
+          fullWidth
+          required
+          className="mb-4"
+        />
 
-        <div className="mb-4">
-          <label className="block mb-1"> Date: </label>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
+        <TextField
+          type="date"
+          name="date"
+          label="Date"
+          value={formData.date}
+          onChange={handleChange}
+          variant="outlined"
+          fullWidth
+          required
+          className="mb-4"
+        />
 
-        <div className="mb-4">
-          <label className="block mb-1"> Diet Content: </label>
-          <textarea
-            name="content"
-            value={formData.content}
-            onChange={handleChange}
-            className="w-full p-2 border rounded h-32"
-            placeholder="What did you eat today?"
-            required
-          />
-        </div>
+        <TextField
+          name="content"
+          label="Diet Content"
+          value={formData.content}
+          onChange={handleChange}
+          variant="outlined"
+          fullWidth
+          multiline
+          rows={4}
+          placeholder="What did you eat today?"
+          required
+          className="mb-4"
+        />
 
-        <button
+        <Button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          variant="contained"
+          color="primary"
           disabled={loading}
+          className="mb-4"
         >
           {loading ? "Saving..." : "Save Diet Entry"}
-        </button>
+        </Button>
 
-        {error && <p className="mt-2 text-red-500"> {error} </p>}
-        {success && <p className="mt-2 text-green-500"> {success} </p>}
+        <Snackbar open={!!error || !!success} autoHideDuration={6000}>
+          <Alert severity={error ? "error" : "success"}>{error || success}</Alert>
+        </Snackbar>
       </form>
 
       <div>
-        <h2 className="text-xl font-bold mb-2"> Diet Entries </h2>
+        <Typography variant="h2" className="text-xl font-bold mb-2">
+          Diet Entries
+        </Typography>
         {loading ? (
-          <p>Loading entries...</p>
+          <CircularProgress />
         ) : entries.length > 0 ? (
           <div className="space-y-4">
             {entries.map((entry) => (
               <div key={entry._id} className="p-4 border rounded shadow">
-                <p className="font-bold">
-                  {" "}
-                  {entry.username}(ID: {entry.userId}){" "}
-                </p>
-                <p className="text-sm text-gray-500">
+                <Typography variant="body1" className="font-bold">
+                  {entry.username}(ID: {entry.userId})
+                </Typography>
+                <Typography variant="body2" className="text-gray-500">
                   {new Date(entry.date).toLocaleDateString()}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap"> {entry.content} </p>
+                </Typography>
+                <Typography variant="body1" className="mt-2">
+                  {entry.content}
+                </Typography>
               </div>
             ))}
           </div>
         ) : (
-          <p>No entries found.</p>
+          <Typography variant="body1">No entries found.</Typography>
         )}
       </div>
     </div>
