@@ -58,12 +58,12 @@ function App() {
                   backgroundColor: "rgba(0, 0, 0, 0.04)",
                 },
               }}
-              onClick={() => (window.location.href = "/previous-entries")}
+              onClick={() => (window.location.href = "/my-diet-entries")}
             >
               <ListItemIcon>
                 <ListIcon />
               </ListItemIcon>
-              <ListItemText primary="Previous Entries" />
+              <ListItemText primary="My Diet Entries" />
             </ListItem>
           </List>
         </Drawer>
@@ -81,7 +81,7 @@ function App() {
           <Container maxWidth="lg">
             <Routes>
               <Route path="/add-entry" element={<DietEntriesForm />} />
-              <Route path="/previous-entries" element={<DietEntriesList />} />
+              <Route path="/my-diet-entries" element={<DietEntriesList />} />
               <Route path="/" element={<DietEntriesForm />} />
             </Routes>
           </Container>
