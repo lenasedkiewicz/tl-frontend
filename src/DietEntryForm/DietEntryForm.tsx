@@ -1,4 +1,3 @@
-// DietEntryForm.tsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -57,12 +56,11 @@ const DietEntryForm: React.FC = () => {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // If userId changes, fetch that user's entries
     if (name === "userId" && value) {
       fetchUserEntries(value);
     }
