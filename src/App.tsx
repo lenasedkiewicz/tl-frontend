@@ -11,8 +11,8 @@ import {
 } from "@mui/material";
 import { Add as AddIcon, List as ListIcon } from "@mui/icons-material";
 
-import DietEntriesForm from "./ComponentsDiet/DietEntriesForm";
 import DietEntriesList from "./ComponentsDiet/DietEntriesList";
+import DietEntryForm from "./ComponentsDiet/DietEntryForm";
 
 const drawerWidth = 240;
 
@@ -80,9 +80,9 @@ function App() {
         >
           <Container maxWidth="lg">
             <Routes>
-              <Route path="/add-entry" element={<DietEntriesForm />} />
+              <Route path="/add-entry" element={<DietEntryForm />} />
               <Route path="/my-diet-entries" element={<DietEntriesList />} />
-              <Route path="/" element={<DietEntriesForm />} />
+              <Route path="/" element={<DietEntryForm />} />
             </Routes>
           </Container>
         </Box>

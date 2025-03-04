@@ -3,7 +3,7 @@ import axios from "axios";
 import { TextField, Button, Snackbar, Box } from "@mui/material";
 import { Alert } from "@mui/material";
 
-interface DietEntries {
+interface DietEntry {
   _id?: string;
   username: string;
   userId: string;
@@ -13,8 +13,8 @@ interface DietEntries {
 
 const API_URL = "http://localhost:5000/api/diet";
 
-function DietEntriesForm() {
-  const [formData, setFormData] = useState<DietEntries>({
+function DietEntryForm() {
+  const [formData, setFormData] = useState<DietEntry>({
     username: "",
     userId: "",
     date: new Date().toISOString().split("T")[0],
@@ -141,4 +141,4 @@ function DietEntriesForm() {
   );
 }
 
-export default DietEntriesForm;
+export default DietEntryForm;
