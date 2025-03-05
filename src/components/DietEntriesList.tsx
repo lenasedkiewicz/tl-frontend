@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Typography,
@@ -18,21 +18,36 @@ interface DietEntry {
 const API_URL = "http://localhost:5000/api/diet";
 
 function DietEntriesList() {
+  const getCurrentMonthRange = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    return {
+      startDate: firstDay.toISOString().split("T")[0],
+      endDate: lastDay.toISOString().split("T")[0],
+    };
+  };
+
   const [entries, setEntries] = useState<DietEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState("");
+
+  const [dateRange, setDateRange] = useState({
+    startDate: getCurrentMonthRange().startDate,
+    endDate: getCurrentMonthRange().endDate,
+  });
 
   useEffect(() => {
     fetchEntries();
-  }, [dateFilter]);
+  }, [dateRange]);
 
   const fetchEntries = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const url = dateFilter ? `${API_URL}?date=${dateFilter}` : API_URL;
+      const url = `${API_URL}?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
 
       const response = await axios.get(url);
       setEntries(response.data);
@@ -53,9 +68,28 @@ function DietEntriesList() {
       <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
         <TextField
           type="date"
-          label="Filter by Date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
+          label="Start Date"
+          value={dateRange.startDate}
+          onChange={(e) =>
+            setDateRange((prev) => ({
+              ...prev,
+              startDate: e.target.value,
+            }))
+          }
+          variant="outlined"
+          fullWidth
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          type="date"
+          label="End Date"
+          value={dateRange.endDate}
+          onChange={(e) =>
+            setDateRange((prev) => ({
+              ...prev,
+              endDate: e.target.value,
+            }))
+          }
           variant="outlined"
           fullWidth
           InputLabelProps={{ shrink: true }}
