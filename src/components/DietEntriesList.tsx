@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Typography, Box, Paper, CircularProgress, Alert } from "@mui/material";
+import {
+  Typography,
+  Box,
+  Paper,
+  CircularProgress,
+  Alert,
+  TextField,
+} from "@mui/material";
 
 interface DietEntry {
   _id?: string;
-  username: string;
-  userId: string;
   date: string;
   content: string;
 }
@@ -16,18 +21,18 @@ function DietEntriesList() {
   const [entries, setEntries] = useState<DietEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
   useEffect(() => {
     fetchEntries();
-  }, [userId]);
+  }, [dateFilter]);
 
   const fetchEntries = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const url = userId ? `${API_URL}/user/${userId}` : API_URL;
+      const url = dateFilter ? `${API_URL}?date=${dateFilter}` : API_URL;
 
       const response = await axios.get(url);
       setEntries(response.data);
@@ -39,24 +44,21 @@ function DietEntriesList() {
     }
   };
 
-  const handleUserIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserId(e.target.value);
-  };
-
   return (
     <Box sx={{ maxWidth: 600, margin: "auto" }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        My Diet Entries
+      </Typography>
+
       <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
-        <Typography variant="h6">Filter by User ID:</Typography>
-        <input
-          type="text"
-          value={userId}
-          onChange={handleUserIdChange}
-          placeholder="Enter User ID"
-          style={{
-            padding: "8px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-          }}
+        <TextField
+          type="date"
+          label="Filter by Date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          variant="outlined"
+          fullWidth
+          InputLabelProps={{ shrink: true }}
         />
       </Box>
 
@@ -74,9 +76,6 @@ function DietEntriesList() {
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {entries.map((entry) => (
             <Paper key={entry._id} elevation={2} sx={{ p: 2 }}>
-              <Typography variant="subtitle1" fontWeight="bold">
-                {entry.username} (ID: {entry.userId})
-              </Typography>
               <Typography variant="body2" color="text.secondary">
                 {new Date(entry.date).toLocaleDateString()}
               </Typography>
