@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import axios from "axios";
 import { TextField, Button, Snackbar, Box, Typography } from "@mui/material";
 import { Alert } from "@mui/material";
+import { useAuth } from "../hooks/useAuth";
 
 interface DietEntry {
+  username: string;
+  userId: string;
   date: string;
   content: string;
 }
@@ -11,7 +14,11 @@ interface DietEntry {
 const API_URL = "http://localhost:5000/api/diet";
 
 function DietEntryForm() {
+  const { user } = useAuth();
+
   const [formData, setFormData] = useState<DietEntry>({
+    username: user?.username || "",
+    userId: user?.id || "",
     date: new Date().toISOString().split("T")[0],
     content: "",
   });
@@ -30,15 +37,24 @@ function DietEntryForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Ensure user data is included but not displayed to the user
+    const updatedFormData = {
+      ...formData,
+      username: user?.username || "",
+      userId: user?.id || "",
+    };
+
     try {
       setLoading(true);
       setError("");
       setSuccess("");
 
-      await axios.post(API_URL, formData);
+      await axios.post(API_URL, updatedFormData);
 
       setSuccess("Diet entry saved successfully!");
       setFormData({
+        username: user?.username || "",
+        userId: user?.id || "",
         date: new Date().toISOString().split("T")[0],
         content: "",
       });
@@ -50,6 +66,14 @@ function DietEntryForm() {
       console.error(err);
     }
   };
+
+  if (!user) {
+    return (
+      <Box sx={{ maxWidth: 500, margin: "auto", mt: 4 }}>
+        <Alert severity="info">Please log in to add diet entries</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -66,6 +90,8 @@ function DietEntryForm() {
       <Typography variant="h4" component="h1" gutterBottom>
         Add Diet Entry
       </Typography>
+
+      {/* Removed the username and userId fields from the UI */}
 
       <TextField
         type="date"

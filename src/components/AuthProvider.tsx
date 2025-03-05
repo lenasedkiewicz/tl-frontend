@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AuthContext, AuthContextType } from "../context/AuthContext";
+import { AuthContext, AuthContextType, User } from "../context/AuthContext";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -7,10 +7,18 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | undefined>(undefined);
 
   const login = (username: string, password: string) => {
     if (username === "admin" && password === "admin") {
+      // Generate a simple user ID (you might want to use a more robust method in a real app)
+      const userId = `user_${Math.random().toString(36).substr(2, 9)}`;
+
       setIsAuthenticated(true);
+      setUser({
+        id: userId,
+        username: username,
+      });
       return true;
     }
     return false;
@@ -18,10 +26,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setIsAuthenticated(false);
+    setUser(undefined);
   };
 
   const contextValue: AuthContextType = {
     isAuthenticated,
+    user,
     login,
     logout,
   };

@@ -123,7 +123,7 @@ export const DashboardView: React.FC = () => {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
+            keepMounted: true,
           }}
           sx={{
             display: { xs: "block", sm: "none" },
@@ -158,7 +158,7 @@ export const DashboardView: React.FC = () => {
           width: { sm: `calc(100% - ${drawerWidth}px)` },
         }}
       >
-        <Toolbar /> {/* This adds space below the app bar */}
+        <Toolbar />
         <Container maxWidth="lg">
           <Routes>
             <Route path="add-entry" element={<DietEntryForm />} />

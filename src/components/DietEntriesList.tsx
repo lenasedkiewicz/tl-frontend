@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Typography,
@@ -8,9 +8,12 @@ import {
   Alert,
   TextField,
 } from "@mui/material";
+import { useAuth } from "../hooks/useAuth";
 
 interface DietEntry {
   _id?: string;
+  username: string;
+  userId: string;
   date: string;
   content: string;
 }
@@ -18,6 +21,9 @@ interface DietEntry {
 const API_URL = "http://localhost:5000/api/diet";
 
 function DietEntriesList() {
+  const { user } = useAuth();
+
+  // Get first and last day of current month
   const getCurrentMonthRange = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -33,21 +39,27 @@ function DietEntriesList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Use state for start and end dates with current month as default
   const [dateRange, setDateRange] = useState({
     startDate: getCurrentMonthRange().startDate,
     endDate: getCurrentMonthRange().endDate,
   });
 
   useEffect(() => {
-    fetchEntries();
-  }, [dateRange]);
+    if (user) {
+      fetchEntries();
+    }
+  }, [dateRange, user]);
 
   const fetchEntries = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      const url = `${API_URL}?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+      // Update URL to use start and end date parameters with user authentication
+      const url = `${API_URL}/user/${user.id}?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
 
       const response = await axios.get(url);
       setEntries(response.data);
@@ -58,6 +70,14 @@ function DietEntriesList() {
       console.error(err);
     }
   };
+
+  if (!user) {
+    return (
+      <Box sx={{ maxWidth: 600, margin: "auto", textAlign: "center", mt: 4 }}>
+        <Alert severity="info">Please log in to view your diet entries</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ maxWidth: 600, margin: "auto" }}>
@@ -121,7 +141,7 @@ function DietEntriesList() {
         </Box>
       ) : (
         <Typography variant="body2" sx={{ textAlign: "center", mt: 4 }}>
-          No entries found.
+          No entries found for this date range.
         </Typography>
       )}
     </Box>
