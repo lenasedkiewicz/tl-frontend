@@ -8,18 +8,20 @@ import * as yup from "yup";
 import axios from "axios";
 import { useNotification } from "../hooks/useNotification";
 
-interface DietEntry {
+interface DietFormValues {
+  date: string;
+  content: string;
+}
+
+interface DietEntryApi {
   username: string;
   userId: string;
   date: string;
   content: string;
 }
-
 const API_URL = "http://localhost:5000/api/diet";
 
 const validationSchema = yup.object({
-  username: yup.string(),
-  userId: yup.string(),
   date: yup.string().required("Date is required"),
   content: yup
     .string()
@@ -39,41 +41,33 @@ function DietEntryForm() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<DietEntry>({
+  } = useForm<DietFormValues>({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      username: user?.username || "",
-      userId: user?.id || "",
       date: new Date().toISOString().split("T")[0],
       content: "",
     },
   });
 
-  // Handler for form submission
-  const onSubmit = async (data: DietEntry) => {
-    // Ensure user data is updated
-    const updatedData = {
-      ...data,
-      username: user?.username || "",
-      userId: user?.id || "",
+  const onSubmit = async (formData: DietFormValues) => {
+    if (!user) return;
+    const apiData: DietEntryApi = {
+      ...formData,
+      username: user.username || "",
+      userId: user.id || "",
     };
 
     setLoading(true);
     try {
-      await axios.post(API_URL, updatedData);
+      await axios.post(API_URL, apiData);
 
-      // Show success notification
       showNotification("Diet entry saved successfully!", "success");
 
-      // Reset form to initial values
       reset({
-        username: user?.username || "",
-        userId: user?.id || "",
         date: new Date().toISOString().split("T")[0],
         content: "",
       });
     } catch (err) {
-      // Show error notification
       showNotification("Failed to save diet entry", "error");
       console.error(err);
     } finally {
