@@ -99,7 +99,6 @@ function DietEntryForm() {
         Add Diet Entry
       </Typography>
 
-      {/* Date field with Controller */}
       <Controller
         name="date"
         control={control}
@@ -118,7 +117,6 @@ function DietEntryForm() {
         )}
       />
 
-      {/* Content field with Controller */}
       <Controller
         name="content"
         control={control}
