@@ -1,8 +1,12 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React from "react";
 import { TextField, Button, Snackbar, Box, Typography } from "@mui/material";
 import { Alert } from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import axios from "axios";
+import { useNotification } from "../hooks/useNotification";
 
 interface DietEntry {
   username: string;
@@ -13,56 +17,67 @@ interface DietEntry {
 
 const API_URL = "http://localhost:5000/api/diet";
 
+const validationSchema = yup.object({
+  username: yup.string(),
+  userId: yup.string(),
+  date: yup.string().required("Date is required"),
+  content: yup
+    .string()
+    .required("Diet content is required")
+    .min(5, "Please provide at least 5 characters")
+    .max(1000, "Content should not exceed 1000 characters"),
+});
+
 function DietEntryForm() {
   const { user } = useAuth();
+  const [loading, setLoading] = React.useState(false);
+  const { notification, showNotification, hideNotification } =
+    useNotification();
 
-  const [formData, setFormData] = useState<DietEntry>({
-    username: user?.username || "",
-    userId: user?.id || "",
-    date: new Date().toISOString().split("T")[0],
-    content: "",
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<DietEntry>({
+    resolver: yupResolver(validationSchema),
+    defaultValues: {
+      username: user?.username || "",
+      userId: user?.id || "",
+      date: new Date().toISOString().split("T")[0],
+      content: "",
+    },
   });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const updatedFormData = {
-      ...formData,
+  // Handler for form submission
+  const onSubmit = async (data: DietEntry) => {
+    // Ensure user data is updated
+    const updatedData = {
+      ...data,
       username: user?.username || "",
       userId: user?.id || "",
     };
 
+    setLoading(true);
     try {
-      setLoading(true);
-      setError("");
-      setSuccess("");
+      await axios.post(API_URL, updatedData);
 
-      await axios.post(API_URL, updatedFormData);
+      // Show success notification
+      showNotification("Diet entry saved successfully!", "success");
 
-      setSuccess("Diet entry saved successfully!");
-      setFormData({
+      // Reset form to initial values
+      reset({
         username: user?.username || "",
         userId: user?.id || "",
         date: new Date().toISOString().split("T")[0],
         content: "",
       });
-
-      setLoading(false);
     } catch (err) {
-      setError("Failed to save diet entry");
-      setLoading(false);
+      // Show error notification
+      showNotification("Failed to save diet entry", "error");
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,7 +92,7 @@ function DietEntryForm() {
   return (
     <Box
       component="form"
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -90,31 +105,43 @@ function DietEntryForm() {
         Add Diet Entry
       </Typography>
 
-      {/* Removed the username and userId fields from the UI */}
-
-      <TextField
-        type="date"
+      {/* Date field with Controller */}
+      <Controller
         name="date"
-        label="Date"
-        value={formData.date}
-        onChange={handleChange}
-        variant="outlined"
-        required
-        fullWidth
-        InputLabelProps={{ shrink: true }}
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            type="date"
+            label="Date"
+            variant="outlined"
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            error={!!errors.date}
+            helperText={errors.date?.message}
+          />
+        )}
       />
 
-      <TextField
+      {/* Content field with Controller */}
+      <Controller
         name="content"
-        label="Diet Content"
-        value={formData.content}
-        onChange={handleChange}
-        variant="outlined"
-        multiline
-        rows={4}
-        placeholder="What did you eat today?"
-        required
-        fullWidth
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            label="Diet Content"
+            variant="outlined"
+            multiline
+            rows={4}
+            placeholder="What did you eat today?"
+            required
+            fullWidth
+            error={!!errors.content}
+            helperText={errors.content?.message}
+          />
+        )}
       />
 
       <Button
@@ -127,27 +154,16 @@ function DietEntryForm() {
         {loading ? "Saving..." : "Save Diet Entry"}
       </Button>
 
-      {(error || success) && (
-        <Snackbar
-          open={!!error || !!success}
-          autoHideDuration={6000}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-          onClose={() => {
-            setError("");
-            setSuccess("");
-          }}
-        >
-          <Alert
-            severity={error ? "error" : "success"}
-            onClose={() => {
-              setError("");
-              setSuccess("");
-            }}
-          >
-            {error || success}
-          </Alert>
-        </Snackbar>
-      )}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        onClose={hideNotification}
+      >
+        <Alert severity={notification.type} onClose={hideNotification}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
