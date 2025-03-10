@@ -24,7 +24,7 @@ import { useAuth } from "../hooks/useAuth";
 import DietEntryForm from "../components/DietEntryForm";
 import DietEntriesList from "../components/DietEntriesList";
 
-const drawerWidth = 240;
+const DRAWER_WIDTH = 240;
 
 export const DashboardView: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -93,8 +93,8 @@ export const DashboardView: React.FC = () => {
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
+          ml: { sm: `${DRAWER_WIDTH}px` },
         }}
       >
         <Toolbar>
@@ -114,7 +114,7 @@ export const DashboardView: React.FC = () => {
       </AppBar>
       <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}
         aria-label="mailbox folders"
       >
         {/* Mobile Drawer */}
@@ -129,7 +129,7 @@ export const DashboardView: React.FC = () => {
             display: { xs: "block", sm: "none" },
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
-              width: drawerWidth,
+              width: DRAWER_WIDTH,
             },
           }}
         >
@@ -142,7 +142,7 @@ export const DashboardView: React.FC = () => {
             display: { xs: "none", sm: "block" },
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
-              width: drawerWidth,
+              width: DRAWER_WIDTH,
             },
           }}
           open
@@ -155,7 +155,7 @@ export const DashboardView: React.FC = () => {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
         }}
       >
         <Toolbar />

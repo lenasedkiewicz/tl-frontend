@@ -1,4 +1,3 @@
-// src/views/LoginView.tsx
 import React, { useState } from "react";
 import {
   Avatar,
@@ -16,7 +15,6 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
-// Create a theme instance
 const defaultTheme = createTheme();
 
 export const LoginView: React.FC = () => {

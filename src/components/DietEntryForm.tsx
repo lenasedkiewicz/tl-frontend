@@ -37,7 +37,6 @@ function DietEntryForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Ensure user data is included but not displayed to the user
     const updatedFormData = {
       ...formData,
       username: user?.username || "",

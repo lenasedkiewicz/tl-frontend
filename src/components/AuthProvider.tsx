@@ -11,7 +11,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = (username: string, password: string) => {
     if (username === "admin" && password === "admin") {
-      // Generate a simple user ID (you might want to use a more robust method in a real app)
       const userId = `user_${Math.random().toString(36).substr(2, 9)}`;
 
       setIsAuthenticated(true);

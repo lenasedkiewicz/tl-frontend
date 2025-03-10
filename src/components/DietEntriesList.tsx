@@ -23,11 +23,17 @@ const API_URL = "http://localhost:5000/api/diet";
 function DietEntriesList() {
   const { user } = useAuth();
 
-  // Get first and last day of current month
   const getCurrentMonthRange = () => {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const firstDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    const lastDay = new Date(
+      Date.UTC(now.getFullYear(), now.getMonth() + 1, 0),
+    );
+
+    console.log(
+      firstDay.toISOString().split("T")[0],
+      lastDay.toISOString().split("T")[0],
+    );
 
     return {
       startDate: firstDay.toISOString().split("T")[0],
@@ -39,7 +45,6 @@ function DietEntriesList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use state for start and end dates with current month as default
   const [dateRange, setDateRange] = useState({
     startDate: getCurrentMonthRange().startDate,
     endDate: getCurrentMonthRange().endDate,
@@ -58,7 +63,6 @@ function DietEntriesList() {
       setLoading(true);
       setError(null);
 
-      // Update URL to use start and end date parameters with user authentication
       const url = `${API_URL}/user/${user.id}?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
 
       const response = await axios.get(url);
