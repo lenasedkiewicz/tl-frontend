@@ -20,7 +20,7 @@ interface DietEntry {
 
 const API_URL = "http://localhost:5000/api/diet";
 
-function DietEntriesList() {
+const DietEntriesList = () => {
   const { user } = useAuth();
 
   const getCurrentMonthRange = () => {
@@ -151,6 +151,6 @@ function DietEntriesList() {
       )}
     </Box>
   );
-}
+};
 
 export default DietEntriesList;
