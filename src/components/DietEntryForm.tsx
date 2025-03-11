@@ -30,7 +30,7 @@ const validationSchema = yup.object({
     .max(1000, "Content should not exceed 1000 characters"),
 });
 
-function DietEntryForm() {
+const DietEntryForm = () => {
   const { user } = useAuth();
   const [loading, setLoading] = React.useState(false);
   const { notification, showNotification, hideNotification } =
@@ -158,6 +158,6 @@ function DietEntryForm() {
       </Snackbar>
     </Box>
   );
-}
+};
 
 export default DietEntryForm;

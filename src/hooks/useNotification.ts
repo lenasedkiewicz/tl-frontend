@@ -8,7 +8,7 @@ interface NotificationState {
   type: NotificationType;
 }
 
-export function useNotification(autoHideDuration = 6000) {
+export const useNotification = (autoHideDuration = 6000) => {
   const [notification, setNotification] = useState<NotificationState>({
     open: false,
     message: "",
@@ -56,4 +56,4 @@ export function useNotification(autoHideDuration = 6000) {
     showNotification,
     hideNotification,
   };
-}
+};
