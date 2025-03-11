@@ -57,7 +57,6 @@ const DietEntriesList = () => {
     endDate: getCurrentMonthRange().endDate,
   });
 
-  // Edit state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<DietEntry | null>(null);
   const [editContent, setEditContent] = useState("");
@@ -86,21 +85,21 @@ const DietEntriesList = () => {
       setError(null);
 
       const url = `${API_URL}/user/${user.id}?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
-      console.log("Fetching entries from:", url); // Log the URL
+      console.info("Fetching entries from:", url);
 
       const response = await axios.get(url);
-      console.log("Entries fetched:", response.data); // Log the fetched data
+      console.info("Entries fetched:", response.data);
 
       setEntries(response.data);
       setLoading(false);
     } catch (err) {
       setError("Failed to fetch entries");
       setLoading(false);
-      console.error("Error fetching entries:", err); // Log the error
+      console.error("Error fetching entries:", err);
     }
   };
   const handleEditClick = (entry: DietEntry) => {
-    console.log("Editing entry:", entry); // Log the entry
+    console.info("Editing entry:", entry);
     setCurrentEntry(entry);
     setEditContent(entry.content);
     setEditDate(entry.date.split("T")[0]);
@@ -115,8 +114,8 @@ const DietEntriesList = () => {
   const handleEditSave = async () => {
     if (!currentEntry?._id) return;
 
-    console.log("Updating entry with ID:", currentEntry._id); // Log the entry ID
-    console.log("Request payload:", { content: editContent, date: editDate }); // Log the payload
+    console.info("Updating entry with ID:", currentEntry._id);
+    console.info("Request payload:", { content: editContent, date: editDate });
 
     try {
       setLoading(true);
@@ -126,7 +125,7 @@ const DietEntriesList = () => {
         date: editDate,
       });
 
-      console.log("Entry updated:", response.data); // Log the updated entry
+      console.info("Entry updated:", response.data);
 
       setEntries((prev) =>
         prev.map((entry) =>
@@ -143,7 +142,7 @@ const DietEntriesList = () => {
     } catch (err) {
       setError("Failed to update entry");
       setLoading(false);
-      console.error("Error updating entry:", err); // Log the error
+      console.error("Error updating entry:", err);
     }
   };
 
@@ -242,7 +241,6 @@ const DietEntriesList = () => {
         </Typography>
       )}
 
-      {/* Edit Dialog */}
       <Dialog
         open={editDialogOpen}
         onClose={handleEditClose}
