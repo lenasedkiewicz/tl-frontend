@@ -88,10 +88,8 @@ const DietEntriesList = () => {
       setError(null);
 
       const url = `${API_URL}/user/${user.id}?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
-      console.info("Fetching entries from:", url);
 
       const response = await axios.get(url);
-      console.info("Entries fetched:", response.data);
 
       setEntries(response.data);
       setLoading(false);
