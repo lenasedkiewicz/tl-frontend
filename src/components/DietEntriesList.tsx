@@ -25,19 +25,20 @@ function DietEntriesList() {
 
   const getCurrentMonthRange = () => {
     const now = new Date();
-    const firstDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-    const lastDay = new Date(
+    const firstDayOfMonth = new Date(
+      Date.UTC(now.getFullYear(), now.getMonth(), 1),
+    );
+    const lastDayOfMonth = new Date(
       Date.UTC(now.getFullYear(), now.getMonth() + 1, 0),
     );
+    const startDate = firstDayOfMonth.toISOString().split("T")[0];
+    const endDate = lastDayOfMonth.toISOString().split("T")[0];
 
-    console.log(
-      firstDay.toISOString().split("T")[0],
-      lastDay.toISOString().split("T")[0],
-    );
+    console.info(startDate, endDate);
 
     return {
-      startDate: firstDay.toISOString().split("T")[0],
-      endDate: lastDay.toISOString().split("T")[0],
+      startDate,
+      endDate,
     };
   };
 
