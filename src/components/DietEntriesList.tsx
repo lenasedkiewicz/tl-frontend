@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Stack,
 } from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
 
@@ -61,6 +62,8 @@ const DietEntriesList = () => {
   const [currentEntry, setCurrentEntry] = useState<DietEntry | null>(null);
   const [editContent, setEditContent] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<DietEntry | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -98,6 +101,7 @@ const DietEntriesList = () => {
       console.error("Error fetching entries:", err);
     }
   };
+
   const handleEditClick = (entry: DietEntry) => {
     console.info("Editing entry:", entry);
     setCurrentEntry(entry);
@@ -143,6 +147,40 @@ const DietEntriesList = () => {
       setError("Failed to update entry");
       setLoading(false);
       console.error("Error updating entry:", err);
+    }
+  };
+
+  const handleDeleteClick = (entry: DietEntry) => {
+    setEntryToDelete(entry);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteClose = () => {
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!entryToDelete?._id) return;
+
+    try {
+      setLoading(true);
+      console.info("Deleting entry with ID:", entryToDelete._id);
+
+      await axios.delete(`${API_URL}/${entryToDelete._id}`);
+
+      setEntries((prev) =>
+        prev.filter((entry) => entry._id !== entryToDelete._id),
+      );
+
+      setSuccessMessage("Entry deleted successfully");
+      setDeleteDialogOpen(false);
+      setEntryToDelete(null);
+      setLoading(false);
+    } catch (err) {
+      setError("Failed to delete entry");
+      setLoading(false);
+      console.error("Error deleting entry:", err);
     }
   };
 
@@ -221,13 +259,22 @@ const DietEntriesList = () => {
                 <Typography variant="body2" color="text.secondary">
                   {new Date(entry.date).toLocaleDateString()}
                 </Typography>
-                <Button
-                  size="small"
-                  color="primary"
-                  onClick={() => handleEditClick(entry)}
-                >
-                  Edit
-                </Button>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    size="small"
+                    color="primary"
+                    onClick={() => handleEditClick(entry)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteClick(entry)}
+                  >
+                    Delete
+                  </Button>
+                </Stack>
               </Box>
               <Typography variant="body1" sx={{ mt: 1 }}>
                 {entry.content}
@@ -277,6 +324,45 @@ const DietEntriesList = () => {
           </Button>
           <Button onClick={handleEditSave} color="primary" variant="contained">
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteClose}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Delete Diet Entry</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Are you sure you want to delete this entry? This action cannot be
+            undone.
+          </Typography>
+          {entryToDelete && (
+            <Box
+              sx={{ mt: 2, p: 2, bgcolor: "background.paper", borderRadius: 1 }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {new Date(entryToDelete.date).toLocaleDateString()}
+              </Typography>
+              <Typography variant="body1" sx={{ mt: 1 }}>
+                {entryToDelete.content}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteClose} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
