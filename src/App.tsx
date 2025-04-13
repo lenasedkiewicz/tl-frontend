@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider } from "./components/AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { LoginView } from "./views/LoginView";
+import LoginView from "./views/LoginView";
 import { DashboardView } from "./views/DashboardView";
 
 const App: React.FC = () => {

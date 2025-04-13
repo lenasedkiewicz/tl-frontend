@@ -21,8 +21,8 @@ import {
 } from "@mui/icons-material";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import DietEntryForm from "../components/DietEntryForm";
-import DietEntriesList from "../components/DietEntriesList";
+import DietEntryForm from "./DietEntryForm";
+import DietEntriesList from "./DietEntriesList";
 
 const DRAWER_WIDTH = 240;
 
