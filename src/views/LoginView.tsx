@@ -115,3 +115,5 @@ export const LoginView: React.FC = () => {
     </ThemeProvider>
   );
 };
+
+export default LoginView;
