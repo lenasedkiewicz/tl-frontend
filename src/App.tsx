@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider } from "./components/AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import LoginView from "./views/LoginView";
+import AuthView from "./views/LoginView";
 import { DashboardView } from "./views/DashboardView";
 
 const App: React.FC = () => {
@@ -15,7 +15,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/login" element={<LoginView />} />
+          <Route path="/login" element={<AuthView />} />
           <Route
             path="/dashboard/*"
             element={

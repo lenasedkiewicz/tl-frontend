@@ -30,26 +30,22 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import axios from "axios";
 import { useNotification } from "../hooks/useNotification";
-import { useNavigate } from "react-router-dom"; // To redirect after successful save
+import { useNavigate } from "react-router-dom";
 
-// Interface for Meal data used in the form
 interface MealFormData {
-  // No _id needed for creation within the form
   name: string;
   hour: number;
   minute: number;
   content: string;
 }
 
-// Interface for the main form values
 interface DietFormValues {
   date: string;
-  meals: MealFormData[]; // Use MealFormData
+  meals: MealFormData[];
 }
 
-const API_BASE_URL = "http://localhost:5000/api/users";
+const API_BASE_URL = "http://localhost:5000/meal";
 
-// --- Time Options ---
 const generateTimeOptions = () => {
   const options = [];
   for (let hour = 0; hour < 24; hour++) {
@@ -67,7 +63,6 @@ const generateTimeOptions = () => {
   return options;
 };
 const timeOptions = generateTimeOptions();
-// --- End Time Options ---
 
 // --- Validation Schema ---
 const validationSchema = yup.object({
