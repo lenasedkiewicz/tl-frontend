@@ -17,21 +17,26 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth"; // Import the auth hook
 
 const defaultTheme = createTheme();
 
-// Optional: Define interfaces for expected API responses for better type safety
-// interface ApiError {
-//   message: string;
-// }
-// interface LoginResponse {
-//    token: string;
-//    // other user data
-// }
-// interface SignUpResponse {
-//    message: string;
-//    // other data
-// }
+// Define interfaces for expected API responses
+interface LoginResponse {
+  token: string;
+  userId: string;
+  username: string;
+  // Add other fields that your API returns
+}
+
+interface SignUpResponse {
+  message: string;
+  // Other signup response fields
+}
+
+interface ApiError {
+  message: string;
+}
 
 export const AuthView: React.FC = () => {
   const [isLoginView, setIsLoginView] = useState<boolean>(true);
@@ -43,6 +48,7 @@ export const AuthView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { login } = useAuth(); // Get login function from auth context
 
   const clearForm = (): void => {
     setUsername("");
@@ -65,14 +71,13 @@ export const AuthView: React.FC = () => {
     setError(null);
     setSuccessMessage(null);
 
-    // Basic validation (added check for signup fields only when !isLoginView)
+    // Basic validation
     if (!username || !password || (!isLoginView && (!email || !name))) {
       setError("Please fill in all required fields.");
-      setLoading(false); // Stop loading if validation fails early
       return;
     }
 
-    setLoading(true); // Start loading only after basic validation passes
+    setLoading(true);
 
     let endpoint: string = "";
     let payload: object = {};
@@ -96,13 +101,10 @@ export const AuthView: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      // Use 'any' for data type initially if response structure is unknown or varies.
-      // For better type safety, define interfaces (like commented out above) and use them:
-      // const data: LoginResponse | SignUpResponse | ApiError = await response.json();
-      const data: any = await response.json();
+      const data: LoginResponse | SignUpResponse | ApiError =
+        await response.json();
 
       if (!response.ok) {
-        // Use message from backend response if available, otherwise use default
         throw new Error(
           data.message || `Request failed with status ${response.status}`,
         );
@@ -111,11 +113,21 @@ export const AuthView: React.FC = () => {
       // --- Success ---
       if (isLoginView) {
         console.log("Login successful:", data);
-        // TODO: Handle successful login securely:
-        // 1. Store the authentication token (e.g., data.token) securely.
-        // 2. Update global auth state (Context API / Zustand / Redux etc.).
-        alert("Login successful! Redirecting..."); // Placeholder
+
+        // Cast data to LoginResponse to access specific properties
+        const loginData = data as LoginResponse;
+
+        console.log("About to call login function with:", loginData.token);
+
+        // Use auth context to store authentication data
+        login(loginData.token, {
+          id: loginData.userId,
+          username: loginData.username,
+        });
+
+        console.log("Login function called, now navigating to dashboard");
         navigate("/dashboard");
+        console.log("Navigate function called");
       } else {
         console.log("Sign up successful:", data);
         setSuccessMessage("Registration successful! Please Sign In.");
@@ -123,9 +135,7 @@ export const AuthView: React.FC = () => {
         clearForm(); // Clear form fields for login
       }
     } catch (err: unknown) {
-      // Catch error as 'unknown' for type safety
       console.error(`${isLoginView ? "Login" : "Sign Up"} error:`, err);
-      // Type guard to safely access error message
       let errorMessage = `An unexpected error occurred during ${isLoginView ? "login" : "sign up"}.`;
       if (err instanceof Error) {
         errorMessage = err.message;
@@ -155,7 +165,7 @@ export const AuthView: React.FC = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            minHeight: "80vh", // Adjusted from original example
+            minHeight: "80vh",
             justifyContent: "center",
           }}
         >
@@ -202,7 +212,7 @@ export const AuthView: React.FC = () => {
                   name="name"
                   autoComplete="name"
                   value={name}
-                  onChange={handleInputChange(setName)} // Use handler function
+                  onChange={handleInputChange(setName)}
                   disabled={loading}
                 />
               )}
@@ -216,9 +226,9 @@ export const AuthView: React.FC = () => {
                 label="Username"
                 name="username"
                 autoComplete="username"
-                autoFocus // Consider making this conditional?
+                autoFocus
                 value={username}
-                onChange={handleInputChange(setUsername)} // Use handler function
+                onChange={handleInputChange(setUsername)}
                 disabled={loading}
               />
 
@@ -234,7 +244,7 @@ export const AuthView: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   value={email}
-                  onChange={handleInputChange(setEmail)} // Use handler function
+                  onChange={handleInputChange(setEmail)}
                   disabled={loading}
                 />
               )}
@@ -250,11 +260,9 @@ export const AuthView: React.FC = () => {
                 id="password"
                 autoComplete={isLoginView ? "current-password" : "new-password"}
                 value={password}
-                onChange={handleInputChange(setPassword)} // Use handler function
+                onChange={handleInputChange(setPassword)}
                 disabled={loading}
               />
-
-              {/* Optional: Add Confirm Password field here if needed */}
 
               <Button
                 type="submit"
@@ -273,7 +281,6 @@ export const AuthView: React.FC = () => {
               </Button>
               <Grid container justifyContent="flex-end">
                 <Grid item>
-                  {/* Explicitly type the onClick handler for the Link */}
                   <Link
                     component="button"
                     variant="body2"
@@ -295,4 +302,4 @@ export const AuthView: React.FC = () => {
   );
 };
 
-export default AuthView; // Export the refactored component
+export default AuthView;

@@ -1,34 +1,29 @@
-import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { AuthProvider } from "./components/AuthProvider";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import AuthView from "./views/LoginView";
+// App.tsx
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { AuthView } from "./views/AuthView";
 import { DashboardView } from "./views/DashboardView";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
-const App: React.FC = () => {
+function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
           <Route path="/login" element={<AuthView />} />
           <Route
-            path="/dashboard/*"
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardView />
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/login" />} />
+          {/* Redirect root to login if not logged in */}
+          <Route path="/" element={<AuthView />} />
         </Routes>
       </Router>
     </AuthProvider>
   );
-};
-
+}
 export default App;
