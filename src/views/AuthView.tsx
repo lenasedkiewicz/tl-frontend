@@ -105,9 +105,7 @@ export const AuthView: React.FC = () => {
         await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || `Request failed with status ${response.status}`,
-        );
+        throw new Error(`Request failed with status ${response.status}`);
       }
 
       // --- Success ---
