@@ -21,8 +21,7 @@ import {
 } from "@mui/icons-material";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import DietEntryForm from "./DietEntryForm";
-import DietEntriesList from "./DietEntriesList";
+import DailyMealForm from "./DailyMealForm";
 
 const DRAWER_WIDTH = 240;
 
@@ -161,9 +160,9 @@ export const DashboardView: React.FC = () => {
         <Toolbar />
         <Container maxWidth="lg">
           <Routes>
-            <Route path="add-entry" element={<DietEntryForm />} />
-            <Route path="my-diet-entries" element={<DietEntriesList />} />
-            <Route path="" element={<DietEntryForm />} />
+            <Route path="add-entry" element={<DailyMealForm />} />
+            <Route path="my-diet-entries" element={<DailyMealForm />} />
+            <Route path="" element={<DailyMealForm />} />
           </Routes>
         </Container>
       </Box>

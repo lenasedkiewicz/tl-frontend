@@ -48,7 +48,7 @@ export const AuthView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { login } = useAuth(); // Get login function from auth context
+  const { login } = useAuth();
 
   const clearForm = (): void => {
     setUsername("");
@@ -64,6 +64,14 @@ export const AuthView: React.FC = () => {
     clearForm();
   };
 
+  // --- 💥 NEW FUNCTION TO GENERATE FAKE TOKEN ---
+  const generateFakeToken = (userId: string): string => {
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    const rawToken = `${userId}.${timestamp}.${randomString}`;
+    return btoa(rawToken); // base64 encode
+  };
+
   const handleSubmit = async (
     event: React.FormEvent<HTMLFormElement>,
   ): Promise<void> => {
@@ -71,7 +79,6 @@ export const AuthView: React.FC = () => {
     setError(null);
     setSuccessMessage(null);
 
-    // Basic validation
     if (!username || !password || (!isLoginView && (!email || !name))) {
       setError("Please fill in all required fields.");
       return;
@@ -79,10 +86,9 @@ export const AuthView: React.FC = () => {
 
     setLoading(true);
 
-    let endpoint: string = "";
+    const backendBaseUrl = "http://localhost:5000";
+    let endpoint = "";
     let payload: object = {};
-
-    const backendBaseUrl = "http://localhost:5000"; // Or read from environment variables
 
     if (isLoginView) {
       endpoint = `${backendBaseUrl}/auth/login`;
@@ -112,28 +118,32 @@ export const AuthView: React.FC = () => {
       if (isLoginView) {
         console.log("Login successful:", data);
 
-        // Cast data to LoginResponse to access specific properties
-        const loginData = data as LoginResponse;
+        // 🔥 Create fake token
+        const fakeToken = generateFakeToken(data._id);
 
-        console.log("About to call login function with:", loginData.token);
+        // 🔥 Map user correctly
+        const user = {
+          id: data._id,
+          username: data.username,
+          // (optional) add email, name if needed
+        };
 
-        // Use auth context to store authentication data
-        login(loginData.token, {
-          id: loginData.userId,
-          username: loginData.username,
-        });
+        console.log("About to call login function with fake token:", fakeToken);
+
+        // 🔥 Login via context
+        login(fakeToken, user);
 
         console.log("Login function called, now navigating to dashboard");
         navigate("/dashboard");
-        console.log("Navigate function called");
       } else {
         console.log("Sign up successful:", data);
         setSuccessMessage("Registration successful! Please Sign In.");
-        setIsLoginView(true); // Switch to login view
-        clearForm(); // Clear form fields for login
+        setIsLoginView(true);
+        clearForm();
       }
     } catch (err: unknown) {
       console.error(`${isLoginView ? "Login" : "Sign Up"} error:`, err);
+
       let errorMessage = `An unexpected error occurred during ${isLoginView ? "login" : "sign up"}.`;
       if (err instanceof Error) {
         errorMessage = err.message;
