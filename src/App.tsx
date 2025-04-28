@@ -1,4 +1,3 @@
-// App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { AuthView } from "./views/AuthView";
@@ -12,7 +11,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<AuthView />} />
           <Route
-            path="/dashboard"
+            path="/dashboard/*" // Add the /* to indicate it has nested routes
             element={
               <ProtectedRoute>
                 <DashboardView />
@@ -26,4 +25,5 @@ function App() {
     </AuthProvider>
   );
 }
+
 export default App;
