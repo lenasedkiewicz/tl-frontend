@@ -19,17 +19,18 @@ import {
   DialogActions,
   CircularProgress,
   Stack,
+  Paper,
+  Divider,
 } from "@mui/material";
 import { Alert } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useAuth } from "../hooks/useAuth";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+
+const API_BASE_URL = "http://localhost:5000";
 
 // Interface for Meal data used in the form
 interface MealData {
@@ -38,21 +39,8 @@ interface MealData {
   hour: number;
   minute: number;
   content: string;
-  date: string; // Now each meal has its own date
+  date: string; // Each meal has its own date
 }
-
-// Interface for the main form values
-interface DailyMealFormValues {
-  date: string;
-  meals: MealData[];
-}
-
-const API_BASE_URL = "http://localhost:5000/api";
-
-const getUserId = (user: any): string | undefined => {
-  // Check for MongoDB style ID (_id) or regular id field
-  return user?._id || user?.id;
-};
 
 // --- Time Options ---
 const generateTimeOptions = () => {
@@ -73,31 +61,6 @@ const generateTimeOptions = () => {
 };
 const timeOptions = generateTimeOptions();
 // --- End Time Options ---
-
-// --- Validation Schema ---
-const validationSchema = yup.object({
-  date: yup.string().required("Date is required"),
-  meals: yup
-    .array()
-    .of(
-      yup.object({
-        name: yup
-          .string()
-          .required("Meal name is required")
-          .max(100, "Name too long"),
-        hour: yup.number().required("Hour required").min(0).max(23),
-        minute: yup.number().required("Minute required").oneOf([0, 30]),
-        content: yup
-          .string()
-          .required("Meal content is required")
-          .min(5, "Content needs minimum 5 characters")
-          .max(1000, "Content max 1000 characters"),
-      }),
-    )
-    .min(1, "At least 1 meal is required")
-    .max(8, "Maximum 8 meals allowed"),
-});
-// --- End Validation Schema ---
 
 // Simple notification hook
 const useNotification = () => {
@@ -128,82 +91,24 @@ const useNotification = () => {
   return { notification, showNotification, hideNotification };
 };
 
-const DailyMealForm = () => {
+// Helper function to get user ID
+const getUserId = (user: any): string | undefined => {
+  return user?._id || user?.id;
+};
+
+// ========================
+// MealDatePicker Component
+// ========================
+export const MealDatePicker: React.FC = () => {
   const { isAuthenticated, user, token } = useAuth();
   const { notification, showNotification, hideNotification } =
     useNotification();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [fetchingMeals, setFetchingMeals] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [meals, setMeals] = useState<MealData[]>([]);
   const [authInitialized, setAuthInitialized] = useState(false);
-
-  // Debug the authentication issue more thoroughly
-  console.log("Auth state (full user object):", user);
-
-  // When using the user ID, ensure we're checking both potential formats
-  const userId = user?._id || user?.id;
-
-  // --- Meal Dialog State ---
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [currentMealIndex, setCurrentMealIndex] = useState<number | null>(null);
-  // --- End Meal Dialog State ---
-
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors, isDirty },
-    setValue,
-    watch,
-  } = useForm<DailyMealFormValues>({
-    resolver: yupResolver(validationSchema),
-    defaultValues: {
-      date: new Date().toISOString().split("T")[0], // Today's date
-      meals: [
-        // Default meals - similar to original form
-        {
-          name: "Breakfast",
-          hour: 8,
-          minute: 0,
-          content: "",
-          date: new Date().toISOString().split("T")[0],
-        },
-        {
-          name: "Lunch",
-          hour: 12,
-          minute: 30,
-          content: "",
-          date: new Date().toISOString().split("T")[0],
-        },
-        {
-          name: "Dinner",
-          hour: 18,
-          minute: 0,
-          content: "",
-          date: new Date().toISOString().split("T")[0],
-        },
-      ],
-    },
-  });
-
-  // react-hook-form hook for managing the meals array
-  const { fields, append, remove, update, replace } = useFieldArray({
-    control,
-    name: "meals",
-  });
-
-  // Mark auth as initialized after first render
-  useEffect(() => {
-    setAuthInitialized(true);
-  }, []);
-
-  // Fetch meals for the selected date whenever date changes or user/auth state changes
-  useEffect(() => {
-    const selectedDate = watch("date");
-    if (isAuthenticated && user?.id) {
-      fetchMealsForDate(selectedDate);
-    }
-  }, [watch("date"), isAuthenticated, user]);
 
   // Configure axios with auth token for all requests
   useEffect(() => {
@@ -214,33 +119,39 @@ const DailyMealForm = () => {
     }
   }, [token]);
 
-  const fetchMealsForDate = async (date: string) => {
-    if (!isAuthenticated || !user?.id) return;
+  // Mark auth as initialized after first render
+  useEffect(() => {
+    setAuthInitialized(true);
+  }, []);
 
-    setFetchingMeals(true);
+  // Fetch meals when date changes or auth state changes
+  useEffect(() => {
+    if (isAuthenticated && getUserId(user)) {
+      fetchMealsForDate(selectedDate);
+    }
+  }, [selectedDate, isAuthenticated, user]);
+
+  const fetchMealsForDate = async (date: string) => {
+    if (!isAuthenticated || !getUserId(user)) return;
+
+    setLoading(true);
     try {
+      const userId = getUserId(user);
       const response = await axios.get(
         `${API_BASE_URL}/meals/user/${userId}/date/${date}`,
       );
+
       if (response.data && Array.isArray(response.data)) {
-        // Replace the current meals array with fetched meals
-        if (response.data.length > 0) {
-          const formattedMeals = response.data.map((meal: any) => ({
-            _id: meal._id,
-            name: meal.name,
-            hour: meal.hour,
-            minute: meal.minute,
-            content: meal.content,
-            date: meal.date,
-          }));
-          replace(formattedMeals);
-        } else {
-          // If no meals found for this date, keep the form with empty meals array
-          // Don't reset to avoid losing the date selection
-          replace([]);
-        }
+        const formattedMeals = response.data.map((meal: any) => ({
+          _id: meal._id,
+          name: meal.name,
+          hour: meal.hour,
+          minute: meal.minute,
+          content: meal.content,
+          date: meal.date,
+        }));
+        setMeals(formattedMeals);
       } else {
-        // Handle unexpected response format
         console.error("Unexpected response format:", response.data);
         showNotification(
           "Received unexpected data format from server",
@@ -254,14 +165,198 @@ const DailyMealForm = () => {
         "error",
       );
     } finally {
-      setFetchingMeals(false);
+      setLoading(false);
     }
   };
 
-  // --- Form Submission Logic ---
-  const onSubmit = async (formData: DailyMealFormValues) => {
-    if (!isAuthenticated || !user?.id) {
-      console.error("User ID not available", { isAuthenticated, user });
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedDate(event.target.value);
+  };
+
+  // Only show the not-logged-in message if we're sure auth has initialized
+  if (!isAuthenticated && authInitialized) {
+    return (
+      <Box sx={{ maxWidth: 700, margin: "auto", mt: 4 }}>
+        <Alert severity="info">Please log in to view your meals.</Alert>
+      </Box>
+    );
+  }
+
+  return (
+    <Paper elevation={2} sx={{ maxWidth: 700, margin: "auto", mt: 4, p: 3 }}>
+      <Typography variant="h5" component="h2" gutterBottom>
+        <CalendarTodayIcon sx={{ mr: 1, verticalAlign: "middle" }} />
+        View Meals by Date
+      </Typography>
+
+      <TextField
+        type="date"
+        label="Select Date"
+        value={selectedDate}
+        onChange={handleDateChange}
+        variant="outlined"
+        fullWidth
+        required
+        InputLabelProps={{ shrink: true }}
+        sx={{ mb: 3 }}
+      />
+
+      {loading ? (
+        <Box display="flex" justifyContent="center" my={4}>
+          <CircularProgress />
+        </Box>
+      ) : meals.length > 0 ? (
+        <Stack spacing={2}>
+          {meals
+            .sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
+            .map((meal) => (
+              <Card key={meal._id} variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    {meal.name} (
+                    {`${String(meal.hour).padStart(2, "0")}:${String(meal.minute).padStart(2, "0")}`}
+                    )
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ whiteSpace: "pre-wrap", mt: 1 }}
+                  >
+                    {meal.content}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+        </Stack>
+      ) : (
+        <Alert severity="info" sx={{ my: 2 }}>
+          No meals found for this date. Use the Meal Entry Form to add meals.
+        </Alert>
+      )}
+
+      {/* Notification Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        onClose={hideNotification}
+      >
+        <Alert
+          severity={notification.type}
+          onClose={hideNotification}
+          sx={{ width: "100%" }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
+    </Paper>
+  );
+};
+
+// ===================
+// MealEntryForm Component
+// ===================
+export const MealEntryForm: React.FC = () => {
+  const { isAuthenticated, user, token } = useAuth();
+  const { notification, showNotification, hideNotification } =
+    useNotification();
+  const [loading, setLoading] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [meals, setMeals] = useState<MealData[]>([]);
+
+  // --- Meal Dialog State ---
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentMealIndex, setCurrentMealIndex] = useState<number | null>(null);
+  const MAX_MEALS = 6; // Changed from 8 to 6 as requested
+
+  // Mark auth as initialized after first render
+  useEffect(() => {
+    setAuthInitialized(true);
+  }, []);
+
+  // Configure axios with auth token for all requests
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common["Authorization"];
+    }
+  }, [token]);
+
+  // Fetch meals when date changes or auth state changes
+  useEffect(() => {
+    if (isAuthenticated && getUserId(user)) {
+      fetchMealsForDate(selectedDate);
+    }
+  }, [selectedDate, isAuthenticated, user]);
+
+  const fetchMealsForDate = async (date: string) => {
+    if (!isAuthenticated || !getUserId(user)) return;
+
+    setLoading(true);
+    try {
+      const userId = getUserId(user);
+      const response = await axios.get(
+        `${API_BASE_URL}/meals/user/${userId}/date/${date}`,
+      );
+
+      if (response.data && Array.isArray(response.data)) {
+        if (response.data.length > 0) {
+          const formattedMeals = response.data.map((meal: any) => ({
+            _id: meal._id,
+            name: meal.name,
+            hour: meal.hour,
+            minute: meal.minute,
+            content: meal.content,
+            date: meal.date,
+          }));
+          setMeals(formattedMeals);
+        } else {
+          // If no meals found for this date, set default meals
+          setMeals([
+            {
+              name: "Breakfast",
+              hour: 8,
+              minute: 0,
+              content: "",
+              date: date,
+            },
+            {
+              name: "Lunch",
+              hour: 12,
+              minute: 30,
+              content: "",
+              date: date,
+            },
+            {
+              name: "Dinner",
+              hour: 18,
+              minute: 0,
+              content: "",
+              date: date,
+            },
+          ]);
+        }
+      }
+    } catch (err: any) {
+      console.error("Error fetching meals:", err);
+      showNotification(
+        `Failed to load meals: ${err.message || "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedDate(event.target.value);
+  };
+
+  const handleSaveMeals = async () => {
+    if (!isAuthenticated || !getUserId(user)) {
       showNotification(
         "Cannot save meals: User information not available",
         "error",
@@ -271,23 +366,25 @@ const DailyMealForm = () => {
 
     setLoading(true);
     try {
+      const userId = getUserId(user);
+
       // Process each meal (create new ones, update existing ones)
-      const savePromises = formData.meals.map(async (meal) => {
-        // Each meal gets the selected date
+      const savePromises = meals.map(async (meal) => {
+        // Make sure each meal has the current date
         const mealData = {
           ...meal,
-          date: formData.date,
+          date: selectedDate,
         };
 
         if (meal._id) {
           // Update existing meal
           return axios.put(
-            `${API_BASE_URL}/meals/${meal._id}/user/${user.id}`,
+            `${API_BASE_URL}/meals/${meal._id}/user/${userId}`,
             mealData,
           );
         } else {
           // Create new meal
-          return axios.post(`${API_BASE_URL}/meals/user/${user.id}`, mealData);
+          return axios.post(`${API_BASE_URL}/meals/user/${userId}`, mealData);
         }
       });
 
@@ -295,7 +392,7 @@ const DailyMealForm = () => {
       showNotification("Meals saved successfully!", "success");
 
       // Refresh the meals from the server
-      fetchMealsForDate(formData.date);
+      fetchMealsForDate(selectedDate);
     } catch (err: any) {
       console.error("Error saving meals:", err);
       let errorMsg = "Failed to save meals.";
@@ -312,14 +409,20 @@ const DailyMealForm = () => {
 
   // --- Delete Meal Handler ---
   const handleDeleteMeal = async (index: number) => {
-    const meal = fields[index];
+    const meal = meals[index];
 
     // If the meal exists in the database (has an _id)
-    if (meal._id && user?.id) {
+    if (meal._id && getUserId(user)) {
       setLoading(true);
       try {
-        await axios.delete(`${API_BASE_URL}/meals/${meal._id}/user/${user.id}`);
-        remove(index);
+        const userId = getUserId(user);
+        await axios.delete(`${API_BASE_URL}/meals/${meal._id}/user/${userId}`);
+
+        // Remove from local state
+        const updatedMeals = [...meals];
+        updatedMeals.splice(index, 1);
+        setMeals(updatedMeals);
+
         showNotification("Meal deleted successfully", "success");
       } catch (err: any) {
         console.error("Error deleting meal:", err);
@@ -332,8 +435,10 @@ const DailyMealForm = () => {
       }
     } else {
       // If it's a new meal that hasn't been saved yet
-      if (fields.length > 1) {
-        remove(index);
+      if (meals.length > 1) {
+        const updatedMeals = [...meals];
+        updatedMeals.splice(index, 1);
+        setMeals(updatedMeals);
       } else {
         showNotification("At least 1 meal is required", "warning");
       }
@@ -342,11 +447,11 @@ const DailyMealForm = () => {
 
   // --- Meal Dialog Handlers ---
   const handleAddMealClick = () => {
-    if (fields.length < 8) {
+    if (meals.length < MAX_MEALS) {
       setCurrentMealIndex(null);
       setDialogOpen(true);
     } else {
-      showNotification("Maximum 8 meals are allowed", "warning");
+      showNotification(`Maximum ${MAX_MEALS} meals are allowed`, "warning");
     }
   };
 
@@ -364,31 +469,34 @@ const DailyMealForm = () => {
     // Make sure the meal has the current date
     const mealWithDate = {
       ...mealData,
-      date: watch("date"),
+      date: selectedDate,
     };
 
     if (currentMealIndex !== null) {
-      update(currentMealIndex, mealWithDate);
+      // Update existing meal
+      const updatedMeals = [...meals];
+      updatedMeals[currentMealIndex] = mealWithDate;
+      setMeals(updatedMeals);
     } else {
-      append(mealWithDate);
+      // Add new meal
+      setMeals([...meals, mealWithDate]);
     }
     handleDialogClose();
   };
-  // --- End Meal Dialog Handlers ---
 
   // --- Meal Dialog Component ---
   const MealDialog = () => {
     // Local state for the meal being edited/added in the dialog
     const [meal, setMeal] = useState<MealData>(() => {
-      if (currentMealIndex !== null && fields[currentMealIndex]) {
-        return { ...fields[currentMealIndex] };
+      if (currentMealIndex !== null && meals[currentMealIndex]) {
+        return { ...meals[currentMealIndex] };
       }
       return {
         name: "",
         hour: 12,
         minute: 0,
         content: "",
-        date: watch("date"),
+        date: selectedDate,
       };
     });
 
@@ -424,6 +532,10 @@ const DailyMealForm = () => {
               fullWidth
               required
               autoFocus
+              error={meal.name.trim() === ""}
+              helperText={
+                meal.name.trim() === "" ? "Meal name is required" : ""
+              }
             />
             <FormControl fullWidth>
               <InputLabel id="time-select-label">Time</InputLabel>
@@ -470,12 +582,7 @@ const DailyMealForm = () => {
       </Dialog>
     );
   };
-  // --- End Meal Dialog Component ---
 
-  // Debug the authentication issue
-  console.log("Auth state:", { isAuthenticated, user, authInitialized });
-
-  // Render Logic
   // Only show the not-logged-in message if we're sure auth has initialized
   if (!isAuthenticated && authInitialized) {
     return (
@@ -486,172 +593,128 @@ const DailyMealForm = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 700, margin: "auto", mt: 4, px: 2 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Daily Meals
+    <Paper elevation={2} sx={{ maxWidth: 700, margin: "auto", mt: 4, p: 3 }}>
+      <Typography variant="h5" component="h2" gutterBottom>
+        <AddIcon sx={{ mr: 1, verticalAlign: "middle" }} />
+        Meal Entry Form
       </Typography>
 
-      {/* Optional debug section - remove in production */}
-      {isAuthenticated && user ? (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Logged in as: {user?.username} (ID: {getUserId(user)})
-        </Alert>
+      {/* Date Picker */}
+      <TextField
+        type="date"
+        label="Select Date"
+        value={selectedDate}
+        onChange={handleDateChange}
+        variant="outlined"
+        fullWidth
+        required
+        InputLabelProps={{ shrink: true }}
+        sx={{ mb: 3 }}
+      />
+
+      {/* Loading indicator when fetching meals */}
+      {loading ? (
+        <Box display="flex" justifyContent="center" my={2}>
+          <CircularProgress size={30} />
+        </Box>
       ) : (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          User data not available. The form may not work correctly.
-        </Alert>
+        <>
+          {/* Meals Section Header */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6">
+              Meals ({meals.length}/{MAX_MEALS})
+            </Typography>
+            <Button
+              startIcon={<AddIcon />}
+              onClick={handleAddMealClick}
+              variant="outlined"
+              size="small"
+              disabled={meals.length >= MAX_MEALS}
+            >
+              Add Meal
+            </Button>
+          </Box>
+
+          {/* List of Meals */}
+          {meals.length === 0 ? (
+            <Alert severity="info" sx={{ my: 2 }}>
+              No meals added for this date. Click "Add Meal" to create one.
+            </Alert>
+          ) : (
+            <Stack spacing={2}>
+              {meals.map((meal, index) => (
+                <Card key={meal._id || index} variant="outlined">
+                  <CardContent>
+                    <Grid container spacing={1} alignItems="center">
+                      {/* Meal Name & Time */}
+                      <Grid item xs={12} sm={8}>
+                        <Typography variant="subtitle1" fontWeight="medium">
+                          {meal.name} (
+                          {`${String(meal.hour).padStart(2, "0")}:${String(meal.minute).padStart(2, "0")}`}
+                          )
+                        </Typography>
+                      </Grid>
+                      {/* Action Buttons */}
+                      <Grid
+                        item
+                        xs={12}
+                        sm={4}
+                        sx={{ display: "flex", justifyContent: "flex-end" }}
+                      >
+                        <IconButton
+                          onClick={() => handleEditMealClick(index)}
+                          size="small"
+                          color="primary"
+                          aria-label="edit meal"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleDeleteMeal(index)}
+                          size="small"
+                          color="error"
+                          aria-label="delete meal"
+                          disabled={loading || meals.length <= 1}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Grid>
+                      {/* Meal Content */}
+                      <Grid item xs={12}>
+                        <Typography
+                          variant="body2"
+                          sx={{ whiteSpace: "pre-wrap", mt: 1 }}
+                        >
+                          {meal.content}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </>
       )}
 
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mb: 4 }}>
-        {/* Date Field */}
-        <Controller
-          name="date"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              type="date"
-              label="Date"
-              variant="outlined"
-              fullWidth
-              required
-              InputLabelProps={{ shrink: true }}
-              error={!!errors.date}
-              helperText={errors.date?.message}
-              sx={{ mb: 3 }}
-            />
-          )}
-        />
-
-        {/* Loading indicator when fetching meals */}
-        {fetchingMeals && (
-          <Box display="flex" justifyContent="center" my={2}>
-            <CircularProgress size={30} />
-          </Box>
-        )}
-
-        {/* General Meal Array Errors */}
-        {errors.meals &&
-          !Array.isArray(errors.meals) &&
-          errors.meals.message && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {errors.meals.message}
-            </Alert>
-          )}
-
-        {/* Meals Section Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Typography variant="h6">Meals ({fields.length}/8)</Typography>
-          <Button
-            startIcon={<AddIcon />}
-            onClick={handleAddMealClick}
-            variant="outlined"
-            size="small"
-            disabled={fields.length >= 8}
-          >
-            Add Meal
-          </Button>
-        </Box>
-
-        {/* List of Meals */}
-        {fields.length === 0 && !fetchingMeals ? (
-          <Alert severity="info" sx={{ my: 2 }}>
-            No meals added for this date. Click "Add Meal" to create one.
-          </Alert>
-        ) : (
-          <Stack spacing={2}>
-            {fields.map((field, index) => (
-              <Card key={field.id} variant="outlined">
-                <CardContent>
-                  <Grid container spacing={1} alignItems="center">
-                    {/* Meal Name & Time */}
-                    <Grid item xs={12} sm={8}>
-                      <Typography variant="subtitle1" fontWeight="medium">
-                        {watch(`meals.${index}.name`)} (
-                        {`${String(watch(`meals.${index}.hour`)).padStart(2, "0")}:${String(watch(`meals.${index}.minute`)).padStart(2, "0")}`}
-                        )
-                      </Typography>
-                    </Grid>
-                    {/* Action Buttons */}
-                    <Grid
-                      item
-                      xs={12}
-                      sm={4}
-                      sx={{ display: "flex", justifyContent: "flex-end" }}
-                    >
-                      <IconButton
-                        onClick={() => handleEditMealClick(index)}
-                        size="small"
-                        color="primary"
-                        aria-label="edit meal"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDeleteMeal(index)}
-                        size="small"
-                        color="error"
-                        aria-label="delete meal"
-                        disabled={loading || (fields.length <= 1 && field._id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Grid>
-                    {/* Meal Content */}
-                    <Grid item xs={12}>
-                      <Typography
-                        variant="body2"
-                        sx={{ whiteSpace: "pre-wrap", mt: 1 }}
-                      >
-                        {watch(`meals.${index}.content`)}
-                      </Typography>
-                    </Grid>
-                    {/* Individual Meal Errors */}
-                    {errors.meals?.[index] && (
-                      <Grid item xs={12}>
-                        <Alert
-                          severity="error"
-                          sx={{ mt: 1, fontSize: "0.8rem", p: "2px 8px" }}
-                        >
-                          {Object.values(errors.meals[index] || {}).map(
-                            (err: any, i) => (
-                              <div key={i}>{err?.message}</div>
-                            ),
-                          )}
-                        </Alert>
-                      </Grid>
-                    )}
-                  </Grid>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-        )}
-
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          disabled={
-            loading ||
-            (!isDirty && fields.length > 0) ||
-            fetchingMeals ||
-            !isAuthenticated
-          }
-          fullWidth
-          sx={{ mt: 3, py: 1.5 }}
-        >
-          {loading ? <CircularProgress size={24} /> : "Save Daily Meals"}
-        </Button>
-      </Box>
+      {/* Submit Button */}
+      <Button
+        onClick={handleSaveMeals}
+        variant="contained"
+        color="primary"
+        disabled={loading || meals.length === 0 || !isAuthenticated}
+        fullWidth
+        sx={{ mt: 3, py: 1.5 }}
+      >
+        {loading ? <CircularProgress size={24} /> : "Save Daily Meals"}
+      </Button>
 
       {/* Meal Add/Edit Dialog */}
       <MealDialog />
@@ -671,8 +734,35 @@ const DailyMealForm = () => {
           {notification.message}
         </Alert>
       </Snackbar>
+    </Paper>
+  );
+};
+
+// =====================
+// Combined Component Example
+// =====================
+export const MealPlanner: React.FC = () => {
+  return (
+    <Box sx={{ maxWidth: 1200, margin: "auto", px: 2 }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        gutterBottom
+        sx={{ mt: 4, mb: 3, textAlign: "center" }}
+      >
+        Daily Meal Planner
+      </Typography>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <MealEntryForm />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <MealDatePicker />
+        </Grid>
+      </Grid>
     </Box>
   );
 };
 
-export default DailyMealForm;
+export default MealPlanner;
