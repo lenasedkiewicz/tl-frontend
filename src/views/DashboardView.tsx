@@ -45,7 +45,7 @@ export const DashboardView: React.FC = () => {
   const drawer = (
     <List>
       <ListItem
-        onClick={() => handleNavigation("/dashboard/add-entry")}
+        onClick={() => handleNavigation("/dashboard/add-edit-meal")}
         sx={{
           cursor: "pointer",
           "&:hover": {
@@ -56,10 +56,10 @@ export const DashboardView: React.FC = () => {
         <ListItemIcon>
           <AddIcon />
         </ListItemIcon>
-        <ListItemText primary="Add Diet Entry" />
+        <ListItemText primary="Add / Edit Meal" />
       </ListItem>
       <ListItem
-        onClick={() => handleNavigation("/dashboard/my-diet-entries")}
+        onClick={() => handleNavigation("/dashboard/meal-entries")}
         sx={{
           cursor: "pointer",
           "&:hover": {
@@ -164,8 +164,8 @@ export const DashboardView: React.FC = () => {
           <Toolbar />
           <Container maxWidth="lg">
             <Routes>
-              <Route path="add-entry" element={<AddEditMealsView />} />
-              <Route path="my-diet-entries" element={<FindMealsView />} />
+              <Route path="add-edit-meal" element={<AddEditMealsView />} />
+              <Route path="meal-entries" element={<FindMealsView />} />
               <Route path="" element={<AddEditMealsView />} />
             </Routes>
           </Container>
