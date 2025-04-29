@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   TextField,
   Button,
@@ -59,6 +59,14 @@ export const AddEditMealsView: React.FC = () => {
     formatISO(new Date(), { representation: "date" }),
   );
   const [meals, setMeals] = useState<MealData[]>([]);
+  const [originalMeals, setOriginalMeals] = useState<MealData[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [discardChangesDialogOpen, setDiscardChangesDialogOpen] =
+    useState(false);
+  const [navigationAttempt, setNavigationAttempt] = useState<string | null>(
+    null,
+  );
+
   const timeOptions = generateTimeOptions();
 
   const [mealDialogOpen, setMealDialogOpen] = useState(false);
@@ -70,6 +78,74 @@ export const AddEditMealsView: React.FC = () => {
     null,
   );
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
+
+  const checkForUnsavedChanges = useCallback(() => {
+    if (meals.length !== originalMeals.length) {
+      return true;
+    }
+
+    const hasDifferences = meals.some((meal, index) => {
+      const originalMeal = originalMeals[index];
+
+      if (!originalMeal || !meal._id) {
+        return true;
+      }
+
+      return (
+        meal.name !== originalMeal.name ||
+        meal.hour !== originalMeal.hour ||
+        meal.minute !== originalMeal.minute ||
+        meal.content !== originalMeal.content
+      );
+    });
+
+    return hasDifferences;
+  }, [meals, originalMeals]);
+
+  useEffect(() => {
+    setHasUnsavedChanges(checkForUnsavedChanges());
+  }, [meals, checkForUnsavedChanges]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue =
+          "You have unsaved changes. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  const handleNavigation = (navigateTo: string | null) => {
+    if (hasUnsavedChanges) {
+      setNavigationAttempt(navigateTo);
+      setDiscardChangesDialogOpen(true);
+      return;
+    }
+
+    if (navigateTo !== null) {
+      // Handle navigation to new path
+      // You'd implement this with your router
+      // For example: history.push(navigateTo);
+      console.log("Navigating to:", navigateTo);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setDiscardChangesDialogOpen(false);
+    setHasUnsavedChanges(false);
+
+    if (navigationAttempt !== null) {
+      console.log("Navigating after discard:", navigationAttempt);
+      setNavigationAttempt(null);
+    }
+  };
 
   useEffect(() => {
     if (token) {
@@ -88,6 +164,7 @@ export const AddEditMealsView: React.FC = () => {
       fetchMealsForDate(selectedDate);
     } else if (authInitialized && !isAuthenticated) {
       setMeals([]);
+      setOriginalMeals([]);
       setLoading(false);
     }
   }, [selectedDate, isAuthenticated, user, authInitialized]);
@@ -112,9 +189,12 @@ export const AddEditMealsView: React.FC = () => {
           date: meal.date,
         }));
         setMeals(formattedMeals);
+        setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals))); // Deep copy for comparison
+        setHasUnsavedChanges(false); // Reset unsaved changes flag after fetch
       } else {
         console.error("Unexpected response format:", response.data);
         setMeals([]);
+        setOriginalMeals([]);
       }
     } catch (err: any) {
       console.error("Error fetching meals:", err);
@@ -125,6 +205,7 @@ export const AddEditMealsView: React.FC = () => {
         );
       } else {
         setMeals([]);
+        setOriginalMeals([]);
       }
     } finally {
       setLoading(false);
@@ -132,7 +213,13 @@ export const AddEditMealsView: React.FC = () => {
   };
 
   const handleDateChange = (dateString: string) => {
-    setSelectedDate(dateString);
+    if (hasUnsavedChanges) {
+      // Store the date we're trying to navigate to
+      setNavigationAttempt(dateString);
+      setDiscardChangesDialogOpen(true);
+    } else {
+      setSelectedDate(dateString);
+    }
   };
 
   const handleSaveMeals = async () => {
@@ -183,6 +270,7 @@ export const AddEditMealsView: React.FC = () => {
       showNotification("Meals saved successfully!", "success");
 
       fetchMealsForDate(selectedDate);
+      setHasUnsavedChanges(false);
     } catch (err: any) {
       console.error("Error saving meals:", err);
       let errorMsg = "Failed to save meals.";
@@ -215,8 +303,10 @@ export const AddEditMealsView: React.FC = () => {
 
         const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
         setMeals(updatedMeals);
+        setOriginalMeals(updatedMeals);
 
         showNotification("Meal deleted successfully", "success");
+        setHasUnsavedChanges(false);
       } catch (err: any) {
         console.error("Error deleting meal:", err);
         showNotification(
@@ -263,10 +353,12 @@ export const AddEditMealsView: React.FC = () => {
     try {
       const userId = getUserId(user);
       await axios.delete(
-        `${API_BASE_URL}/meals/user/${userId}/date/${selectedDate}`,
+        `${API_BASE_URL}/meals/user/${userId}/date/${selectedDate}`, // needs to be fixed (add endpoint on backend)
       );
 
       setMeals([]);
+      setOriginalMeals([]);
+      setHasUnsavedChanges(false);
 
       showNotification(
         "All meals for this date deleted successfully",
@@ -339,7 +431,6 @@ export const AddEditMealsView: React.FC = () => {
       };
     });
 
-    // Update dialog state if selectedDate or currentMealIndex changes while dialog is open
     useEffect(() => {
       setDialogMealState((prevMeal) => {
         const baseMeal =
@@ -393,6 +484,7 @@ export const AddEditMealsView: React.FC = () => {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
+              select // <-- Add the select prop
               label="Meal Name"
               value={dialogMealState.name}
               onChange={(e) =>
@@ -401,13 +493,21 @@ export const AddEditMealsView: React.FC = () => {
               fullWidth
               required
               autoFocus
+              // Validation remains the same: name shouldn't be empty
               error={dialogMealState.name.trim() === ""}
               helperText={
                 dialogMealState.name.trim() === ""
                   ? "Meal name is required"
                   : ""
               }
-            />
+            >
+              {/* Map over the choices to create MenuItem components */}
+              {MEAL_NAME_CHOICES.map((choice) => (
+                <MenuItem key={choice} value={choice}>
+                  {choice}
+                </MenuItem>
+              ))}
+            </TextField>
             <FormControl fullWidth required>
               <InputLabel id="time-select-label">Time</InputLabel>
               <Select
@@ -511,6 +611,15 @@ export const AddEditMealsView: React.FC = () => {
           >
             <Typography variant="h6">
               Meals ({meals.length}/{MAX_MEALS})
+              {hasUnsavedChanges && (
+                <Typography
+                  component="span"
+                  color="warning.main"
+                  sx={{ ml: 1, fontSize: "0.8em", fontStyle: "italic" }}
+                >
+                  (Unsaved changes)
+                </Typography>
+              )}
             </Typography>
             <Box>
               <Button
@@ -564,7 +673,12 @@ export const AddEditMealsView: React.FC = () => {
         onClick={handleSaveMeals}
         variant="contained"
         color="primary"
-        disabled={loading || meals.length === 0 || !isAuthenticated}
+        disabled={
+          loading ||
+          meals.length === 0 ||
+          !isAuthenticated ||
+          !hasUnsavedChanges
+        }
         fullWidth
         sx={{ mt: 3, py: 1.5 }}
         startIcon={
@@ -599,6 +713,22 @@ export const AddEditMealsView: React.FC = () => {
         confirmButtonText="Delete All"
         confirmButtonColor="error"
         loading={loading} // Use the main loading state
+      />
+
+      {/* Unsaved Changes Dialog */}
+      <ConfirmationDialog
+        open={discardChangesDialogOpen}
+        onClose={() => {
+          setDiscardChangesDialogOpen(false);
+          setNavigationAttempt(null);
+        }}
+        onConfirm={handleDiscardChanges}
+        title="Unsaved Changes"
+        content="You have unsaved changes. Do you want to discard them and continue?"
+        confirmButtonText="Discard Changes"
+        confirmButtonColor="warning"
+        cancelButtonText="Stay Here"
+        loading={loading}
       />
 
       {/* Notification Snackbar */}
