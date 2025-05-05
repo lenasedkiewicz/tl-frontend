@@ -4,7 +4,7 @@ import { Typography, IconButton, Card, CardContent, Grid } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import { MealCardItemProps } from "../../interfaces/MealInterfaces";
-import { formatTime } from "../HelperFunctions";
+import { formatTime } from "../helperfunctions/TimeHelpers";
 
 export const MealCardItem: React.FC<MealCardItemProps> = ({
   meal,
