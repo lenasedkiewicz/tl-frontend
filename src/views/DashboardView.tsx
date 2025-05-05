@@ -1,147 +1,36 @@
 import React, { useState, useCallback } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import {
   AppBar,
   Box,
   CssBaseline,
   Drawer,
   IconButton,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Toolbar,
   Typography,
   Container,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import AddIcon from "@mui/icons-material/Add";
-import ListIcon from "@mui/icons-material/List";
-import LogoutIcon from "@mui/icons-material/Logout";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { useAuth } from "../hooks/useAuth";
 import { AddEditMealsView } from "./AddEditMealsView";
 import { FindMealsView } from "./FindMealsView";
 import LogoutConfirmation from "../components/common/LogoutConfirmation";
-
-declare global {
-  interface Window {
-    __hasMealUnsavedChanges?: boolean;
-    __checkMealUnsavedChanges?: () => boolean;
-    __showMealUnsavedChangesDialog?: (navigateTo: string | null) => boolean;
-  }
-}
+import { MenuDrawer } from "../components/common/MenuDrawer";
 
 const DRAWER_WIDTH = 240;
 
 export const DashboardView: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
-    null,
-  );
-
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const getCurrentView = () => {
-    const path = location.pathname.split("/").pop() || "";
-    if (path === "dashboard" || path === "add-edit-meal") return "meals";
-    if (path === "meal-entries") return "entries";
-    return path;
-  };
-
-  const currentView = getCurrentView();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleNavigation = useCallback(
-    (path: string) => {
-      const targetView = path.split("/").pop() || "";
-      if (
-        (currentView === "meals" || currentView === "add-edit-meal") &&
-        window.__checkMealUnsavedChanges?.()
-      ) {
-        setPendingNavigation(path);
-
-        const dialogShown = window.__showMealUnsavedChangesDialog?.(path);
-
-        if (dialogShown) {
-          return;
-        }
-      }
-
-      navigate(path);
-      setMobileOpen(false);
-    },
-    [currentView, navigate],
-  );
-
-  const handleLogoutAttempt = useCallback(() => {
-    if (
-      (currentView === "meals" || currentView === "add-edit-meal") &&
-      window.__hasMealUnsavedChanges
-    ) {
-      setShowLogoutConfirm(true);
-    } else {
-      logout();
-    }
-  }, [currentView, logout]);
-
   const handleMealPageLeave = useCallback(() => {
     console.info("Meal page was left with unsaved changes");
   }, []);
-
-  const drawer = (
-    <List>
-      <ListItem
-        onClick={() => handleNavigation("/dashboard/add-edit-meal")}
-        sx={{
-          cursor: "pointer",
-          "&:hover": {
-            backgroundColor: "rgba(0, 0, 0, 0.04)",
-          },
-        }}
-      >
-        <ListItemIcon>
-          <AddIcon />
-        </ListItemIcon>
-        <ListItemText primary="Add / Edit Meal" />
-      </ListItem>
-      <ListItem
-        onClick={() => handleNavigation("/dashboard/meal-entries")}
-        sx={{
-          cursor: "pointer",
-          "&:hover": {
-            backgroundColor: "rgba(0, 0, 0, 0.04)",
-          },
-        }}
-      >
-        <ListItemIcon>
-          <ListIcon />
-        </ListItemIcon>
-        <ListItemText primary="My Diet Entries" />
-      </ListItem>
-      <ListItem
-        onClick={handleLogoutAttempt}
-        sx={{
-          cursor: "pointer",
-          "&:hover": {
-            backgroundColor: "rgba(0, 0, 0, 0.04)",
-          },
-        }}
-      >
-        <ListItemIcon>
-          <LogoutIcon />
-        </ListItemIcon>
-        <ListItemText primary="Logout" />
-      </ListItem>
-    </List>
-  );
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -189,7 +78,7 @@ export const DashboardView: React.FC = () => {
               },
             }}
           >
-            {drawer}
+            <MenuDrawer />
           </Drawer>
           <Drawer
             variant="permanent"
@@ -202,7 +91,7 @@ export const DashboardView: React.FC = () => {
             }}
             open
           >
-            {drawer}
+            <MenuDrawer />
           </Drawer>
         </Box>
         <Box

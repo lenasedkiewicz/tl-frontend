@@ -16,3 +16,11 @@ export interface ConfirmationDialogProps {
   | "warning";
   loading?: boolean;
 }
+// is it used anywhere?
+declare global {
+  export interface Window {
+    __hasMealUnsavedChanges?: boolean;
+    __checkMealUnsavedChanges?: () => boolean;
+    __showMealUnsavedChangesDialog?: (navigateTo: string | null) => boolean;
+  }
+}
