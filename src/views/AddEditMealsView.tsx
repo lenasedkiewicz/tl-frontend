@@ -26,7 +26,7 @@ import axios from "axios";
 import { formatISO } from "date-fns";
 import { useNotification } from "../hooks/useNotification";
 import { MealData } from "../interfaces/MealInterfaces";
-import { getUserId, sortMealsByTime } from "../components/HelperFunctions";
+import { sortMealsByTime } from "../components/HelperFunctions";
 import { ConfirmationDialog } from "../components/common/ConfirmationDialog";
 import { CalendarDatePicker } from "../components/common/CalendarDatePicker";
 import { MealCardItem } from "../components/meal/MealCardItem";
@@ -34,6 +34,7 @@ import {
   formatTime,
   generateTimeOptions,
 } from "../components/helperfunctions/TimeHelpers";
+import { getUserId } from "../components/helperfunctions/AuthHelpers";
 
 const API_BASE_URL = "http://localhost:5000";
 

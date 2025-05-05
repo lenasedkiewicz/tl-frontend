@@ -13,10 +13,11 @@ import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 import { useNotification } from "../hooks/useNotification";
 import { MealData } from "../interfaces/MealInterfaces";
-import { getUserId, sortMealsByTime } from "../components/HelperFunctions";
+import { sortMealsByTime } from "../components/HelperFunctions";
 import { formatISO } from "date-fns";
 import { CalendarDatePicker } from "../components/common/CalendarDatePicker";
 import { MealCardItem } from "../components/meal/MealCardItem";
+import { getUserId } from "../components/helperfunctions/AuthHelpers";
 
 const API_BASE_URL = "http://localhost:5000";
 
