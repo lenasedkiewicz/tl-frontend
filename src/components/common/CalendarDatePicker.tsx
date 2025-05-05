@@ -1,7 +1,7 @@
 import { CalendarDatePickerProps } from "../../interfaces/TimeInterfaces";
 import React from "react";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker"; // Calendar DatePicker
-import { formatISO, parseISO, isValid } from "date-fns"; // For date handling
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { formatISO, parseISO, isValid } from "date-fns";
 
 export const CalendarDatePicker: React.FC<CalendarDatePickerProps> = ({
   label,
@@ -16,9 +16,9 @@ export const CalendarDatePicker: React.FC<CalendarDatePickerProps> = ({
 
   const handleDateChange = (date: Date | null) => {
     if (date && isValid(date)) {
-      onChange(formatISO(date, { representation: "date" })); // Format as YYYY-MM-DD
+      onChange(formatISO(date, { representation: "date" }));
     } else {
-      onChange(""); // Or handle null/invalid date appropriately
+      onChange("");
     }
   };
 
@@ -27,9 +27,6 @@ export const CalendarDatePicker: React.FC<CalendarDatePickerProps> = ({
       label={label}
       value={dateValue}
       onChange={handleDateChange}
-      // renderInput={(params) => ( // Use the new TextField slot
-      //   <TextField {...params} fullWidth={fullWidth} required={required} disabled={disabled} sx={sx} />
-      // )}
       slotProps={{
         textField: {
           fullWidth: fullWidth,
@@ -38,8 +35,6 @@ export const CalendarDatePicker: React.FC<CalendarDatePickerProps> = ({
           sx: sx,
         },
       }}
-      // Newer versions of @mui/x-date-pickers use slots instead of renderInput
-      // If using an older version, uncomment renderInput and remove slotProps
     />
   );
 };

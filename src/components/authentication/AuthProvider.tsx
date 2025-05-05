@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { AuthContext, AuthContextType, User } from "../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
+import { AuthContextType, User } from "../../interfaces/AuthInterfaces";
 
 interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-// Example login endpoint URL
-const LOGIN_ENDPOINT = "https://localhost:5000"; // Replace with your real API
+const LOGIN_ENDPOINT = "https://localhost:5000";
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | undefined>(undefined);
   const [token, setToken] = useState<string | undefined>(undefined);
-  console.log("dupa");
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
     const storedUser = localStorage.getItem("authUser");
@@ -49,7 +48,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      // Assuming the API returns { token: string, user: { id: string, username: string } }
       const { token: newToken, user: userData } = data;
 
       localStorage.setItem("authToken", newToken);

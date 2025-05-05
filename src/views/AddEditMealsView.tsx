@@ -49,7 +49,6 @@ const MEAL_NAME_CHOICES = [
   "Other",
 ];
 
-// Define the props to receive a onPageLeave callback
 interface AddEditMealsViewProps {
   onPageLeave?: () => void;
 }
@@ -86,22 +85,18 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
   );
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
 
-  // Detect unsaved changes
   const checkForUnsavedChanges = useCallback(() => {
     if (meals.length !== originalMeals.length) {
       return true;
     }
 
-    // Check for new or modified meals (without IDs or with modified content)
     const hasDifferences = meals.some((meal, index) => {
       const originalMeal = originalMeals[index];
 
-      // If there's no matching original meal or this is a new meal (no ID)
       if (!originalMeal || !meal._id) {
         return true;
       }
 
-      // Check if any properties differ
       return (
         meal.name !== originalMeal.name ||
         meal.hour !== originalMeal.hour ||
@@ -113,12 +108,10 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     return hasDifferences;
   }, [meals, originalMeals]);
 
-  // Update unsaved changes status whenever meals change
   useEffect(() => {
     setHasUnsavedChanges(checkForUnsavedChanges());
   }, [meals, checkForUnsavedChanges]);
 
-  // Handle browser navigation/refresh events
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -135,45 +128,37 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     };
   }, [hasUnsavedChanges]);
 
-  // Notify parent component about unsaved changes
   useEffect(() => {
-    // Create a global variable to track unsaved changes for this component
     window.__hasMealUnsavedChanges = hasUnsavedChanges;
 
-    // Create a global function that can be called before navigation
     window.__checkMealUnsavedChanges = () => {
       return hasUnsavedChanges;
     };
 
-    // Create another global function to programmatically show the dialog
     window.__showMealUnsavedChangesDialog = (navigateTo: string | null) => {
       if (hasUnsavedChanges) {
         setNavigationAttempt(navigateTo);
         setDiscardChangesDialogOpen(true);
-        return true; // Dialog was shown
+        return true;
       }
-      return false; // No need for dialog
+      return false;
     };
 
     return () => {
-      // Clean up global variables when component unmounts
       delete window.__hasMealUnsavedChanges;
       delete window.__checkMealUnsavedChanges;
       delete window.__showMealUnsavedChangesDialog;
     };
   }, [hasUnsavedChanges]);
 
-  // Component unmount handler - optionally notify parent
   useEffect(() => {
     return () => {
-      // If component is unmounting with unsaved changes
       if (hasUnsavedChanges && onPageLeave) {
         onPageLeave();
       }
     };
   }, [hasUnsavedChanges, onPageLeave]);
 
-  // Function to handle navigation with unsaved changes
   const handleNavigation = (navigateTo: string | null) => {
     if (hasUnsavedChanges) {
       setNavigationAttempt(navigateTo);
@@ -181,12 +166,8 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
       return;
     }
 
-    // If no unsaved changes, proceed with navigation
     if (navigateTo !== null) {
-      // Handle navigation to new path
-      // You'd implement this with your router
-      // For example: history.push(navigateTo);
-      console.log("Navigating to:", navigateTo);
+      console.info("Navigating to:", navigateTo);
     }
   };
 
@@ -195,16 +176,13 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     setHasUnsavedChanges(false);
 
     if (navigationAttempt !== null) {
-      // Handle navigation to the stored path
-      // For example: history.push(navigationAttempt);
-      console.log("Navigating after discard:", navigationAttempt);
+      console.info("Navigating after discard:", navigationAttempt);
       setNavigationAttempt(null);
     }
   };
 
   useEffect(() => {
     if (token) {
-      // console.log(token);
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     } else {
       delete axios.defaults.headers.common["Authorization"];
@@ -245,8 +223,8 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
           date: meal.date,
         }));
         setMeals(formattedMeals);
-        setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals))); // Deep copy for comparison
-        setHasUnsavedChanges(false); // Reset unsaved changes flag after fetch
+        setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals)));
+        setHasUnsavedChanges(false);
       } else {
         console.error("Unexpected response format:", response.data);
         setMeals([]);
@@ -270,7 +248,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
 
   const handleDateChange = (dateString: string) => {
     if (hasUnsavedChanges) {
-      // Store the date we're trying to navigate to
       setNavigationAttempt(dateString);
       setDiscardChangesDialogOpen(true);
     } else {
@@ -359,7 +336,7 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
 
         const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
         setMeals(updatedMeals);
-        setOriginalMeals(updatedMeals); // Update original meals after successful deletion
+        setOriginalMeals(updatedMeals);
 
         showNotification("Meal deleted successfully", "success");
         setHasUnsavedChanges(false);
@@ -409,7 +386,7 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     try {
       const userId = getUserId(user);
       await axios.delete(
-        `${API_BASE_URL}/meals/user/${userId}/date/${selectedDate}`, // needs to be fixed (add endpoint on backend)
+        `${API_BASE_URL}/meals/user/${userId}/date/${selectedDate}`,
       );
 
       setMeals([]);
@@ -470,7 +447,7 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     handleMealDialogClose();
   };
 
-  // --- Meal Add/Edit Dialog Component (Inline or Extracted) ---
+  // TO DO:
   // Keeping it inline for access to parent state/handlers, but could be extracted
   // by passing `meal`, `onSave`, `onClose`, `timeOptions`, etc. as props.
   const MealDialog = () => {
@@ -496,7 +473,7 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         return {
           ...baseMeal,
           date: selectedDate,
-          // Keep existing name/content/time if editing the same meal index across date changes?
+          // TO DO: Keep existing name/content/time if editing the same meal index across date changes?
           // Or reset if date changes while editing? Resetting is simpler:
           ...(currentMealIndex === null ||
           !meals[currentMealIndex] ||
@@ -540,7 +517,7 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              select // <-- Add the select prop
+              select
               label="Meal Name"
               value={dialogMealState.name}
               onChange={(e) =>
@@ -549,7 +526,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
               fullWidth
               required
               autoFocus
-              // Validation remains the same: name shouldn't be empty
               error={dialogMealState.name.trim() === ""}
               helperText={
                 dialogMealState.name.trim() === ""
@@ -557,7 +533,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
                   : ""
               }
             >
-              {/* Map over the choices to create MenuItem components */}
               {MEAL_NAME_CHOICES.map((choice) => (
                 <MenuItem key={choice} value={choice}>
                   {choice}
@@ -603,7 +578,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
                   : ""
               }
             />
-            {/* Display the date for confirmation */}
             <Typography variant="caption" color="text.secondary">
               Meal date: {selectedDate}
             </Typography>
@@ -625,7 +599,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     );
   };
 
-  // Only show the not-logged-in message if we're sure auth has initialized
   if (!isAuthenticated && authInitialized) {
     return (
       <Box sx={{ maxWidth: 700, margin: "auto", mt: 4 }}>
@@ -649,14 +622,12 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         sx={{ mb: 3 }}
       />
 
-      {/* Loading or Meals Section */}
       {loading ? (
         <Box display="flex" justifyContent="center" my={2}>
           <CircularProgress size={30} />
         </Box>
       ) : (
         <>
-          {/* Meals Section Header */}
           <Box
             sx={{
               display: "flex",
@@ -701,7 +672,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
             </Box>
           </Box>
 
-          {/* List of Meals */}
           {meals.length === 0 ? (
             <Alert severity="info" sx={{ my: 2 }}>
               No meals added for {selectedDate}. Click "Add Meal" to create one.
@@ -710,11 +680,11 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
             <Stack spacing={2}>
               {sortMealsByTime(meals).map((meal, index) => (
                 <MealCardItem
-                  key={meal._id || index} // Use _id if exists, fallback to index
+                  key={meal._id || index}
                   meal={meal}
                   onEdit={() => handleEditMealClick(index)}
                   onDelete={() => handleDeleteMealClick(index)}
-                  loading={loading} // Pass loading to disable actions during save/delete
+                  loading={loading}
                 />
               ))}
             </Stack>
@@ -724,7 +694,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
 
       <Divider sx={{ my: 3 }} />
 
-      {/* Save Button */}
       <Button
         onClick={handleSaveMeals}
         variant="contained"
@@ -744,10 +713,8 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         Save Daily Meals
       </Button>
 
-      {/* Meal Add/Edit Dialog */}
       <MealDialog />
 
-      {/* Single Meal Delete Confirmation Dialog */}
       <ConfirmationDialog
         open={deleteSingleConfirmOpen}
         onClose={() => setDeleteSingleConfirmOpen(false)}
@@ -756,10 +723,9 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         content="Are you sure you want to delete this meal?"
         confirmButtonText="Delete"
         confirmButtonColor="error"
-        loading={loading} // Use the main loading state
+        loading={loading}
       />
 
-      {/* Delete All Meals Confirmation Dialog */}
       <ConfirmationDialog
         open={deleteAllConfirmOpen}
         onClose={() => setDeleteAllConfirmOpen(false)}
@@ -768,10 +734,9 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         content={`Are you sure you want to delete ALL meals for ${selectedDate}? This action cannot be undone.`}
         confirmButtonText="Delete All"
         confirmButtonColor="error"
-        loading={loading} // Use the main loading state
+        loading={loading}
       />
 
-      {/* Unsaved Changes Dialog */}
       <ConfirmationDialog
         open={discardChangesDialogOpen}
         onClose={() => {
@@ -787,7 +752,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         loading={loading}
       />
 
-      {/* Notification Snackbar */}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}

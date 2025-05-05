@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { Alert } from "@mui/material";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import { useAuth } from "../hooks/useAuth"; // Assuming this hook exists
+import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 import { useNotification } from "../hooks/useNotification";
 import { MealData } from "../interfaces/MealInterfaces";
@@ -21,17 +21,16 @@ import { MealCardItem } from "../components/meal/MealCardItem";
 const API_BASE_URL = "http://localhost:5000";
 
 export const FindMealsView: React.FC = () => {
-  const { isAuthenticated, user, token } = useAuth(); // Assuming useAuth provides token
+  const { isAuthenticated, user, token } = useAuth();
   const { notification, showNotification, hideNotification } =
     useNotification();
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    formatISO(new Date(), { representation: "date" }), // Default to today YYYY-MM-DD
+    formatISO(new Date(), { representation: "date" }),
   );
   const [meals, setMeals] = useState<MealData[]>([]);
   const [authInitialized, setAuthInitialized] = useState(false);
 
-  // Configure axios with auth token for all requests
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -40,19 +39,16 @@ export const FindMealsView: React.FC = () => {
     }
   }, [token]);
 
-  // Mark auth as initialized after first render
   useEffect(() => {
     setAuthInitialized(true);
   }, []);
 
-  // Fetch meals when date changes or auth state changes
   useEffect(() => {
     if (isAuthenticated && getUserId(user) && selectedDate) {
       fetchMealsForDate(selectedDate);
     } else if (authInitialized && !isAuthenticated) {
-      // Clear meals if not authenticated after auth initializes
       setMeals([]);
-      setLoading(false); // Ensure loading is false if auth fails
+      setLoading(false);
     }
   }, [selectedDate, isAuthenticated, user, authInitialized]);
 
@@ -62,7 +58,6 @@ export const FindMealsView: React.FC = () => {
     setLoading(true);
     try {
       const userId = getUserId(user);
-      // Ensure date format is correct for API
       const response = await axios.get(
         `${API_BASE_URL}/meals/user/${userId}/date/${date}`,
       );
@@ -74,7 +69,7 @@ export const FindMealsView: React.FC = () => {
           hour: meal.hour,
           minute: meal.minute,
           content: meal.content,
-          date: meal.date, // API should ideally return this format
+          date: meal.date,
         }));
         setMeals(formattedMeals);
       } else {
@@ -86,14 +81,13 @@ export const FindMealsView: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error fetching meals:", err);
-      // Only show error if not just a 404 (no meals found)
       if (err.response?.status !== 404) {
         showNotification(
           `Failed to load meals: ${err.message || "Unknown error"}`,
           "error",
         );
       } else {
-        setMeals([]); // No meals is a valid response, just show empty state
+        setMeals([]);
       }
     } finally {
       setLoading(false);
@@ -104,7 +98,6 @@ export const FindMealsView: React.FC = () => {
     setSelectedDate(dateString);
   };
 
-  // Only show the not-logged-in message if we're sure auth has initialized
   if (!isAuthenticated && authInitialized) {
     return (
       <Box sx={{ maxWidth: 700, margin: "auto", mt: 4 }}>
@@ -120,7 +113,6 @@ export const FindMealsView: React.FC = () => {
         View Meals by Date
       </Typography>
 
-      {/* Calendar Date Picker */}
       <CalendarDatePicker
         label="Select Date"
         value={selectedDate}
@@ -129,7 +121,6 @@ export const FindMealsView: React.FC = () => {
         sx={{ mb: 3 }}
       />
 
-      {/* Loading or Meals List */}
       {loading ? (
         <Box display="flex" justifyContent="center" my={4}>
           <CircularProgress />
@@ -146,7 +137,6 @@ export const FindMealsView: React.FC = () => {
         </Alert>
       )}
 
-      {/* Notification Snackbar */}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}

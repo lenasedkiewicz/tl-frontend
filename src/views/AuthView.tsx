@@ -17,21 +17,18 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth"; // Import the auth hook
+import { useAuth } from "../hooks/useAuth";
 
 const defaultTheme = createTheme();
 
-// Define interfaces for expected API responses
 interface LoginResponse {
   token: string;
   userId: string;
   username: string;
-  // Add other fields that your API returns
 }
 
 interface SignUpResponse {
   message: string;
-  // Other signup response fields
 }
 
 interface ApiError {
@@ -63,13 +60,12 @@ export const AuthView: React.FC = () => {
     setIsLoginView(!isLoginView);
     clearForm();
   };
-
-  // --- 💥 NEW FUNCTION TO GENERATE FAKE TOKEN ---
+  // TO DO -add fake token to Python backend logic
   const generateFakeToken = (userId: string): string => {
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
     const rawToken = `${userId}.${timestamp}.${randomString}`;
-    return btoa(rawToken); // base64 encode
+    return btoa(rawToken);
   };
 
   const handleSubmit = async (
@@ -114,29 +110,17 @@ export const AuthView: React.FC = () => {
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      // --- Success ---
       if (isLoginView) {
-        console.log("Login successful:", data);
-
-        // 🔥 Create fake token
         const fakeToken = generateFakeToken(data._id);
 
-        // 🔥 Map user correctly
         const user = {
           id: data._id,
           username: data.username,
-          // (optional) add email, name if needed
         };
 
-        console.log("About to call login function with fake token:", fakeToken);
-
-        // 🔥 Login via context
         login(fakeToken, user);
-
-        console.log("Login function called, now navigating to dashboard");
         navigate("/dashboard");
       } else {
-        console.log("Sign up successful:", data);
         setSuccessMessage("Registration successful! Please Sign In.");
         setIsLoginView(true);
         clearForm();
@@ -156,7 +140,6 @@ export const AuthView: React.FC = () => {
     }
   };
 
-  // Type for MUI TextField onChange event
   const handleInputChange =
     (setter: React.Dispatch<React.SetStateAction<string>>) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
@@ -209,7 +192,6 @@ export const AuthView: React.FC = () => {
               onSubmit={handleSubmit}
               sx={{ mt: 1, width: "100%" }}
             >
-              {/* Name Field (Sign Up only) */}
               {!isLoginView && (
                 <TextField
                   margin="normal"
@@ -225,7 +207,6 @@ export const AuthView: React.FC = () => {
                 />
               )}
 
-              {/* Username Field */}
               <TextField
                 margin="normal"
                 required
@@ -240,7 +221,6 @@ export const AuthView: React.FC = () => {
                 disabled={loading}
               />
 
-              {/* Email Field (Sign Up only) */}
               {!isLoginView && (
                 <TextField
                   margin="normal"
@@ -257,7 +237,6 @@ export const AuthView: React.FC = () => {
                 />
               )}
 
-              {/* Password Field */}
               <TextField
                 margin="normal"
                 required

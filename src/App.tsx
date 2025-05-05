@@ -11,14 +11,13 @@ function App() {
         <Routes>
           <Route path="/login" element={<AuthView />} />
           <Route
-            path="/dashboard/*" // Add the /* to indicate it has nested routes
+            path="/dashboard/*"
             element={
               <ProtectedRoute>
                 <DashboardView />
               </ProtectedRoute>
             }
           />
-          {/* Redirect root to login if not logged in */}
           <Route path="/" element={<AuthView />} />
         </Routes>
       </Router>

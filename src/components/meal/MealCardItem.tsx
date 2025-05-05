@@ -16,15 +16,12 @@ export const MealCardItem: React.FC<MealCardItemProps> = ({
     <Card variant="outlined">
       <CardContent>
         <Grid container spacing={1} alignItems="center">
-          {/* Meal Name & Time */}
           <Grid item xs={12} sm={onEdit || onDelete ? 8 : 12}>
             {" "}
-            {/* Adjust grid size if actions exist */}
             <Typography variant="subtitle1" fontWeight="medium">
               {meal.name} ({formatTime(meal.hour, meal.minute)})
             </Typography>
           </Grid>
-          {/* Action Buttons (only if onEdit or onDelete are provided) */}
           {(onEdit || onDelete) && (
             <Grid
               item
@@ -56,7 +53,6 @@ export const MealCardItem: React.FC<MealCardItemProps> = ({
               )}
             </Grid>
           )}
-          {/* Meal Content */}
           <Grid item xs={12}>
             <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mt: 1 }}>
               {meal.content || "No content added."}
