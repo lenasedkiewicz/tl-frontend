@@ -13,7 +13,7 @@ import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 import { useNotification } from "../hooks/useNotification";
 import { MealData } from "../interfaces/MealInterfaces";
-import { sortMealsByTime } from "../components/HelperFunctions";
+import { sortMealsByTime } from "../components/helperfunctions/MealHelpers";
 import { formatISO } from "date-fns";
 import { CalendarDatePicker } from "../components/common/CalendarDatePicker";
 import { MealCardItem } from "../components/meal/MealCardItem";

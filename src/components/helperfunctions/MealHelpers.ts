@@ -1,4 +1,4 @@
-import { MealData } from "../interfaces/MealInterfaces";
+import { MealData } from "../../interfaces/MealInterfaces";
 
 export const sortMealsByTime = (meals: MealData[]): MealData[] => {
   return [...meals].sort(
