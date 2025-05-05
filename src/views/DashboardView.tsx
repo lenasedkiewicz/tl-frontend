@@ -17,6 +17,7 @@ import { AddEditMealsView } from "./AddEditMealsView";
 import { FindMealsView } from "./FindMealsView";
 import LogoutConfirmation from "../components/common/LogoutConfirmation";
 import { MenuDrawer } from "../components/common/MenuDrawer";
+import { useAuth } from "../hooks/useAuth";
 
 const DRAWER_WIDTH = 240;
 
@@ -31,6 +32,8 @@ export const DashboardView: React.FC = () => {
   const handleMealPageLeave = useCallback(() => {
     console.info("Meal page was left with unsaved changes");
   }, []);
+
+  const { logout } = useAuth();
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
