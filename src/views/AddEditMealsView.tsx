@@ -45,6 +45,7 @@ const MEAL_NAME_CHOICES = [
   "Tea",
   "Dinner",
   "Supper",
+  "Snack",
   "Other",
 ];
 
