@@ -1,4 +1,6 @@
-export const getUserId = (user: { _id?: string, id?: string, username: string }): string | undefined => {
-  console.info(user)
+import { User } from "../../interfaces/AuthInterfaces";
+
+export const getUserId = (user: User): string => {
+  console.info(user._id)
   return user?._id || user?.id;
 };

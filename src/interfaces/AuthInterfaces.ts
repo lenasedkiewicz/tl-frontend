@@ -4,6 +4,7 @@ export interface AuthProviderProps {
 
 export interface User {
   id: string;
+  _id?: string | undefined;
   username: string;
 }
 
