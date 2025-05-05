@@ -1,46 +1,115 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import {
+  AppBar,
   Box,
+  CssBaseline,
   Drawer,
+  IconButton,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Container,
-  CssBaseline,
   Toolbar,
-  AppBar,
   Typography,
-  IconButton,
+  Container,
 } from "@mui/material";
-import {
-  Add as AddIcon,
-  List as ListIcon,
-  Menu as MenuIcon,
-  Logout as LogoutIcon,
-} from "@mui/icons-material";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import MenuIcon from "@mui/icons-material/Menu";
+import AddIcon from "@mui/icons-material/Add";
+import ListIcon from "@mui/icons-material/List";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useAuth } from "../hooks/useAuth";
 import { AddEditMealsView } from "./AddEditMealsView";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { FindMealsView } from "./FindMealsView";
+import LogoutConfirmation from "../components/common/LogoutConfirmation";
+
+// Define global typings for unsaved changes handling
+declare global {
+  interface Window {
+    __hasMealUnsavedChanges?: boolean;
+    __checkMealUnsavedChanges?: () => boolean;
+    __showMealUnsavedChangesDialog?: (navigateTo: string | null) => boolean;
+  }
+}
 
 const DRAWER_WIDTH = 240;
 
 export const DashboardView: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
+
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine current view from URL path
+  const getCurrentView = () => {
+    const path = location.pathname.split("/").pop() || "";
+    if (path === "dashboard" || path === "add-edit-meal") return "meals";
+    if (path === "meal-entries") return "entries";
+    return path;
+  };
+
+  const currentView = getCurrentView();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    setMobileOpen(false);
-  };
+  // Handle navigation between dashboard views
+  const handleNavigation = useCallback(
+    (path: string) => {
+      // Extract view name from path for unsaved changes check
+      const targetView = path.split("/").pop() || "";
+
+      // Check if we're leaving the meals view with unsaved changes
+      if (
+        (currentView === "meals" || currentView === "add-edit-meal") &&
+        window.__checkMealUnsavedChanges?.()
+      ) {
+        // Store the intended destination
+        setPendingNavigation(path);
+
+        // Use the global function from the meal component to show its dialog
+        const dialogShown = window.__showMealUnsavedChangesDialog?.(path);
+
+        if (dialogShown) {
+          // Dialog is shown, navigation will be handled by the meal component
+          return;
+        }
+      }
+
+      // If no unsaved changes or dialog was not shown, navigate immediately
+      navigate(path);
+      setMobileOpen(false);
+    },
+    [currentView, navigate],
+  );
+
+  // Handle logout attempt
+  const handleLogoutAttempt = useCallback(() => {
+    // Check if there are unsaved changes in the meals view
+    if (
+      (currentView === "meals" || currentView === "add-edit-meal") &&
+      window.__hasMealUnsavedChanges
+    ) {
+      setShowLogoutConfirm(true);
+    } else {
+      // No unsaved changes, logout immediately
+      logout();
+    }
+  }, [currentView, logout]);
+
+  // Callback for when page is left with unsaved changes
+  const handleMealPageLeave = useCallback(() => {
+    console.log("Meal page was left with unsaved changes");
+    // Additional actions can be taken here if needed
+  }, []);
 
   const drawer = (
     <List>
@@ -73,7 +142,7 @@ export const DashboardView: React.FC = () => {
         <ListItemText primary="My Diet Entries" />
       </ListItem>
       <ListItem
-        onClick={logout}
+        onClick={handleLogoutAttempt}
         sx={{
           cursor: "pointer",
           "&:hover": {
@@ -164,13 +233,32 @@ export const DashboardView: React.FC = () => {
           <Toolbar />
           <Container maxWidth="lg">
             <Routes>
-              <Route path="add-edit-meal" element={<AddEditMealsView />} />
+              <Route
+                path="add-edit-meal"
+                element={<AddEditMealsView onPageLeave={handleMealPageLeave} />}
+              />
               <Route path="meal-entries" element={<FindMealsView />} />
-              <Route path="" element={<AddEditMealsView />} />
+              <Route
+                path=""
+                element={<AddEditMealsView onPageLeave={handleMealPageLeave} />}
+              />
             </Routes>
           </Container>
         </Box>
       </Box>
+
+      {/* Logout confirmation dialog */}
+      <LogoutConfirmation
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          logout();
+        }}
+        message="You have unsaved meal changes. Logging out will discard these changes. Continue?"
+      />
     </LocalizationProvider>
   );
 };
+
+export default DashboardView;

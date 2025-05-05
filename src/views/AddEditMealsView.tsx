@@ -49,7 +49,14 @@ const MEAL_NAME_CHOICES = [
   "Other",
 ];
 
-export const AddEditMealsView: React.FC = () => {
+// Define the props to receive a onPageLeave callback
+interface AddEditMealsViewProps {
+  onPageLeave?: () => void;
+}
+
+export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
+  onPageLeave,
+}) => {
   const { isAuthenticated, user, token } = useAuth();
   const { notification, showNotification, hideNotification } =
     useNotification();
@@ -79,18 +86,22 @@ export const AddEditMealsView: React.FC = () => {
   );
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
 
+  // Detect unsaved changes
   const checkForUnsavedChanges = useCallback(() => {
     if (meals.length !== originalMeals.length) {
       return true;
     }
 
+    // Check for new or modified meals (without IDs or with modified content)
     const hasDifferences = meals.some((meal, index) => {
       const originalMeal = originalMeals[index];
 
+      // If there's no matching original meal or this is a new meal (no ID)
       if (!originalMeal || !meal._id) {
         return true;
       }
 
+      // Check if any properties differ
       return (
         meal.name !== originalMeal.name ||
         meal.hour !== originalMeal.hour ||
@@ -102,10 +113,12 @@ export const AddEditMealsView: React.FC = () => {
     return hasDifferences;
   }, [meals, originalMeals]);
 
+  // Update unsaved changes status whenever meals change
   useEffect(() => {
     setHasUnsavedChanges(checkForUnsavedChanges());
   }, [meals, checkForUnsavedChanges]);
 
+  // Handle browser navigation/refresh events
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -122,6 +135,45 @@ export const AddEditMealsView: React.FC = () => {
     };
   }, [hasUnsavedChanges]);
 
+  // Notify parent component about unsaved changes
+  useEffect(() => {
+    // Create a global variable to track unsaved changes for this component
+    window.__hasMealUnsavedChanges = hasUnsavedChanges;
+
+    // Create a global function that can be called before navigation
+    window.__checkMealUnsavedChanges = () => {
+      return hasUnsavedChanges;
+    };
+
+    // Create another global function to programmatically show the dialog
+    window.__showMealUnsavedChangesDialog = (navigateTo: string | null) => {
+      if (hasUnsavedChanges) {
+        setNavigationAttempt(navigateTo);
+        setDiscardChangesDialogOpen(true);
+        return true; // Dialog was shown
+      }
+      return false; // No need for dialog
+    };
+
+    return () => {
+      // Clean up global variables when component unmounts
+      delete window.__hasMealUnsavedChanges;
+      delete window.__checkMealUnsavedChanges;
+      delete window.__showMealUnsavedChangesDialog;
+    };
+  }, [hasUnsavedChanges]);
+
+  // Component unmount handler - optionally notify parent
+  useEffect(() => {
+    return () => {
+      // If component is unmounting with unsaved changes
+      if (hasUnsavedChanges && onPageLeave) {
+        onPageLeave();
+      }
+    };
+  }, [hasUnsavedChanges, onPageLeave]);
+
+  // Function to handle navigation with unsaved changes
   const handleNavigation = (navigateTo: string | null) => {
     if (hasUnsavedChanges) {
       setNavigationAttempt(navigateTo);
@@ -129,6 +181,7 @@ export const AddEditMealsView: React.FC = () => {
       return;
     }
 
+    // If no unsaved changes, proceed with navigation
     if (navigateTo !== null) {
       // Handle navigation to new path
       // You'd implement this with your router
@@ -142,6 +195,8 @@ export const AddEditMealsView: React.FC = () => {
     setHasUnsavedChanges(false);
 
     if (navigationAttempt !== null) {
+      // Handle navigation to the stored path
+      // For example: history.push(navigationAttempt);
       console.log("Navigating after discard:", navigationAttempt);
       setNavigationAttempt(null);
     }
@@ -149,6 +204,7 @@ export const AddEditMealsView: React.FC = () => {
 
   useEffect(() => {
     if (token) {
+      // console.log(token);
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     } else {
       delete axios.defaults.headers.common["Authorization"];
@@ -303,7 +359,7 @@ export const AddEditMealsView: React.FC = () => {
 
         const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
         setMeals(updatedMeals);
-        setOriginalMeals(updatedMeals);
+        setOriginalMeals(updatedMeals); // Update original meals after successful deletion
 
         showNotification("Meal deleted successfully", "success");
         setHasUnsavedChanges(false);
