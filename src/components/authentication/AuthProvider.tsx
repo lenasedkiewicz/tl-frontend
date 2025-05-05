@@ -10,7 +10,7 @@ const LOGIN_ENDPOINT = "https://localhost:5000";
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | undefined>(undefined);
+  const [user, setUser] = useState<User>();
   const [token, setToken] = useState<string | undefined>(undefined);
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
