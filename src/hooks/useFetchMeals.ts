@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { MealData } from '../interfaces/MealInterfaces';
 import { User } from '../interfaces/AuthInterfaces';
@@ -6,7 +6,7 @@ import { User } from '../interfaces/AuthInterfaces';
 interface UseFetchMealsOptions {
   API_BASE_URL: string;
   isAuthenticated: boolean;
-  getUserId: (user: User) => string | null;
+  getUserId: (user: User) => string;
   user: User;
   showNotification?: (message: string, type: 'success' | 'error' | 'info') => void;
   trackOriginalMeals?: boolean;
@@ -20,6 +20,7 @@ interface UseFetchMealsReturn {
   hasUnsavedChanges?: boolean;
   setHasUnsavedChanges?: (hasChanges: boolean) => void;
   setMeals: React.Dispatch<React.SetStateAction<MealData[]>>;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const useFetchMeals = ({
@@ -32,18 +33,61 @@ export const useFetchMeals = ({
 }: UseFetchMealsOptions): UseFetchMealsReturn => {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-
   const [originalMeals, setOriginalMeals] = useState<MealData[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  const fetchMealsForDate = useCallback(async (date: string) => {
-    if (!isAuthenticated || !getUserId(user) || !date) return;
+  // Keep track of the userId to avoid unnecessary re-renders
+  const userIdRef = useRef<string | null>(null);
 
+  // Use this to prevent duplicate requests for the same date
+  const activeRequestRef = useRef<string | null>(null);
+
+  // Update the user ID reference whenever the user object changes
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      try {
+        const id = getUserId(user);
+        userIdRef.current = id || null;
+      } catch (error) {
+        console.error("Error getting user ID:", error);
+        userIdRef.current = null;
+      }
+    } else {
+      userIdRef.current = null;
+    }
+  }, [user, isAuthenticated, getUserId]);
+
+  const fetchMealsForDate = useCallback(async (date: string) => {
+    // Exit early if required data is missing
+    if (!isAuthenticated || !date) {
+      console.log("Fetch skipped: Missing authentication or date");
+      return;
+    }
+
+    // Get userId from our ref to avoid dependency on user object in useCallback
+    const userId = userIdRef.current;
+    if (!userId) {
+      console.log("Fetch skipped: No user ID available");
+      return;
+    }
+
+    // Create a unique request key to prevent duplicate requests
+    const requestKey = `${userId}-${date}`;
+
+    // Skip if this exact request is already in progress
+    if (activeRequestRef.current === requestKey) {
+      console.log("Duplicate request prevented:", requestKey);
+      return;
+    }
+
+    activeRequestRef.current = requestKey;
     setLoading(true);
+
     try {
-      const userId = getUserId(user);
+      console.log(`Fetching meals from: ${API_BASE_URL}/meals/user/${userId}/date/${date}`);
+
       const response = await axios.get(
-        `${API_BASE_URL}/meals/user/${userId}/date/${date}`,
+        `${API_BASE_URL}/meals/user/${userId}/date/${date}`
       );
 
       if (response.data && Array.isArray(response.data)) {
@@ -59,6 +103,7 @@ export const useFetchMeals = ({
         setMeals(formattedMeals);
 
         if (trackOriginalMeals) {
+          // Create a deep copy to avoid reference issues
           setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals)));
           setHasUnsavedChanges(false);
         }
@@ -79,7 +124,7 @@ export const useFetchMeals = ({
         if (showNotification) {
           showNotification(
             `Failed to load meals: ${err.message || "Unknown error"}`,
-            "error",
+            "error"
           );
         }
       }
@@ -90,25 +135,29 @@ export const useFetchMeals = ({
       }
     } finally {
       setLoading(false);
+      // Clear the active request flag after a short delay to prevent immediate duplicate calls
+      setTimeout(() => {
+        if (activeRequestRef.current === requestKey) {
+          activeRequestRef.current = null;
+        }
+      }, 100);
     }
-  }, [API_BASE_URL, isAuthenticated, getUserId, user, showNotification, trackOriginalMeals]);
+  }, [API_BASE_URL, isAuthenticated, showNotification, trackOriginalMeals]);
+  // Removed getUserId and user from dependencies ^^
 
-  if (trackOriginalMeals) {
-    return {
-      meals,
-      loading,
-      fetchMealsForDate,
-      originalMeals,
-      hasUnsavedChanges,
-      setHasUnsavedChanges,
-      setMeals,
-    };
-  }
-
-  return {
+  // Build the return object
+  const returnObj: UseFetchMealsReturn = {
     meals,
     loading,
     fetchMealsForDate,
     setMeals,
   };
+
+  if (trackOriginalMeals) {
+    returnObj.originalMeals = originalMeals;
+    returnObj.hasUnsavedChanges = hasUnsavedChanges;
+    returnObj.setHasUnsavedChanges = setHasUnsavedChanges;
+  }
+
+  return returnObj;
 };

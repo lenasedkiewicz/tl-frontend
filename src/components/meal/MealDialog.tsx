@@ -15,7 +15,10 @@ import {
 } from "@mui/material";
 
 import { MealData } from "../../interfaces/MealInterfaces";
-import { formatTime } from "../../components/helperfunctions/TimeHelpers";
+import {
+  formatTime,
+  generateTimeOptions,
+} from "../../components/helperfunctions/TimeHelpers";
 
 const MEAL_NAME_CHOICES = [
   "Breakfast",
@@ -29,85 +32,102 @@ const MEAL_NAME_CHOICES = [
   "Other",
 ];
 
-export const MealDialog = ({ currentMealIndex, meals, selectedDate }) => {
-  const [dialogMealState, setDialogMealState] = useState<MealData>(() => {
-    if (currentMealIndex !== null && meals[currentMealIndex]) {
-      return { ...meals[currentMealIndex] };
-    }
-    return {
-      name: "",
-      hour: 12,
-      minute: 0o0,
-      content: "",
-      date: selectedDate,
-    };
-  });
+interface MealDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSave: (mealData: MealData) => void;
+  meal?: MealData;
+  selectedDate: string;
+  loading?: boolean;
+}
+
+const getDefaultMeal = (date: string): MealData => ({
+  name: "",
+  hour: 12,
+  minute: 0,
+  content: "",
+  date: date,
+});
+
+export const MealDialog: React.FC<MealDialogProps> = ({
+  open,
+  onClose,
+  onSave,
+  meal,
+  selectedDate,
+  loading = false,
+}) => {
+  const [dialogMealState, setDialogMealState] = useState<MealData>(
+    getDefaultMeal(selectedDate),
+  );
+
+  const timeOptions = generateTimeOptions();
 
   useEffect(() => {
-    setDialogMealState((prevMeal) => {
-      const baseMeal =
-        currentMealIndex !== null && meals[currentMealIndex]
-          ? meals[currentMealIndex]
-          : { name: "", hour: 12, minute: 0, content: "" };
-      return {
-        ...baseMeal,
-        date: selectedDate,
-        // TO DO: Keep existing name/content/time if editing the same meal index across date changes?
-        // Or reset if date changes while editing? Resetting is simpler:
-        ...(currentMealIndex === null ||
-        !meals[currentMealIndex] ||
-        meals[currentMealIndex].date !== selectedDate
-          ? {
-              name: "",
-              hour: 12,
-              minute: 0,
-              content: "",
-            }
-          : {}),
-      };
-    });
-  }, [selectedDate, currentMealIndex, meals]);
+    if (open) {
+      if (meal) {
+        setDialogMealState({ ...meal, date: selectedDate });
+      } else {
+        setDialogMealState(getDefaultMeal(selectedDate));
+      }
+    }
+  }, [meal, selectedDate, open]);
 
-  const handleTimeChange = (e: React.ChangeEvent<{ value: unknown }>) => {
-    const selectedTimeValue = e.target.value as string;
-    const [hourStr, minuteStr] = selectedTimeValue.split(":");
-    setDialogMealState({
-      ...dialogMealState,
-      hour: parseInt(hourStr, 10),
-      minute: parseInt(minuteStr, 10),
-    });
+  const handleInputChange = (
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      | SelectChangeEvent<string>,
+  ) => {
+    const { name, value } = e.target;
+    setDialogMealState((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
   };
 
-  const isValid =
-    dialogMealState.name.trim() &&
-    dialogMealState.content.trim() &&
-    dialogMealState.content.length >= 5;
+  const handleTimeChange = (e: SelectChangeEvent<string>) => {
+    const selectedTimeValue = e.target.value;
+    const [hourStr, minuteStr] = selectedTimeValue.split(":");
+    setDialogMealState((prevState) => ({
+      ...prevState,
+      hour: parseInt(hourStr, 10),
+      minute: parseInt(minuteStr, 10),
+    }));
+  };
+
+  const handleInternalSave = () => {
+    // Ensure the date is the current selectedDate from the parent
+    // and all other fields are from the dialog's state.
+    onSave({ ...dialogMealState, date: selectedDate });
+  };
+
+  const isMealNameValid = dialogMealState.name.trim() !== "";
+  const isMealContentValid = dialogMealState.content.trim().length >= 5;
+  const isValid = isMealNameValid && isMealContentValid;
 
   return (
-    <Dialog
-      open={mealDialogOpen}
-      onClose={handleMealDialogClose}
-      maxWidth="sm"
-      fullWidth
-    >
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        {currentMealIndex !== null ? "Edit Meal Details" : "Add New Meal"}
+        {meal?._id || (meal && meal.name)
+          ? "Edit Meal Details"
+          : "Add New Meal"}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
             select
             label="Meal Name"
+            name="name" // Added name attribute for handleInputChange
             value={dialogMealState.name}
-            onChange={(e) =>
-              setDialogMealState({ ...dialogMealState, name: e.target.value })
-            }
+            onChange={handleInputChange}
             fullWidth
             required
-            autoFocus
-            error={dialogMealState.name.trim() === ""}
+            autoFocus // Good for accessibility on dialog open
+            error={!isMealNameValid && dialogMealState.name !== ""} // Show error if touched and invalid
             helperText={
-              dialogMealState.name.trim() === "" ? "Meal name is required" : ""
+              !isMealNameValid && dialogMealState.name !== ""
+                ? "Meal name is required"
+                : ""
             }
           >
             {MEAL_NAME_CHOICES.map((choice) => (
@@ -116,6 +136,7 @@ export const MealDialog = ({ currentMealIndex, meals, selectedDate }) => {
               </MenuItem>
             ))}
           </TextField>
+
           <FormControl fullWidth required>
             <InputLabel id="time-select-label">Time</InputLabel>
             <Select
@@ -131,28 +152,24 @@ export const MealDialog = ({ currentMealIndex, meals, selectedDate }) => {
               ))}
             </Select>
           </FormControl>
+
           <TextField
             label="Meal Content"
+            name="content" // Added name attribute for handleInputChange
             value={dialogMealState.content}
-            onChange={(e) =>
-              setDialogMealState({
-                ...dialogMealState,
-                content: e.target.value,
-              })
-            }
+            onChange={handleInputChange}
             multiline
             rows={4}
             fullWidth
             required
-            error={
-              dialogMealState.content.length > 0 &&
-              dialogMealState.content.length < 5
-            }
+            error={!isMealContentValid && dialogMealState.content.trim() !== ""} // Show error if touched and invalid
             helperText={
-              dialogMealState.content.length > 0 &&
-              dialogMealState.content.length < 5
-                ? "Min 5 characters required"
-                : ""
+              !isMealContentValid && dialogMealState.content.trim() !== ""
+                ? "Content must be at least 5 characters."
+                : dialogMealState.content.trim() === "" &&
+                    dialogMealState.content !== ""
+                  ? "Content is required." // Differentiate between too short and empty after touch
+                  : ""
             }
           />
           <Typography variant="caption" color="text.secondary">
@@ -161,15 +178,15 @@ export const MealDialog = ({ currentMealIndex, meals, selectedDate }) => {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleMealDialogClose} disabled={loading}>
+        <Button onClick={onClose} disabled={loading} color="inherit">
           Cancel
         </Button>
         <Button
-          onClick={() => handleMealDialogSave(dialogMealState)}
+          onClick={handleInternalSave}
           variant="contained"
           disabled={!isValid || loading}
         >
-          {currentMealIndex !== null ? "Update Meal" : "Add Meal"}
+          {meal?._id || (meal && meal.name) ? "Update Meal" : "Add Meal"}
         </Button>
       </DialogActions>
     </Dialog>

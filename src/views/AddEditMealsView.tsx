@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Button,
   Snackbar,
@@ -27,18 +27,6 @@ import { useFetchMeals } from "../hooks/useFetchMeals";
 
 const API_BASE_URL = "http://localhost:5000";
 
-const MEAL_NAME_CHOICES = [
-  "Breakfast",
-  "Brunch",
-  "Elevenses",
-  "Lunch",
-  "Tea",
-  "Dinner",
-  "Supper",
-  "Snack",
-  "Other",
-];
-
 interface AddEditMealsViewProps {
   onPageLeave?: () => void;
 }
@@ -54,7 +42,8 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     formatISO(new Date(), { representation: "date" }),
   );
 
-  // Use our custom hook for meal fetching, with change tracking enabled
+  const dateJustChangedRef = useRef(false);
+
   const {
     meals,
     loading,
@@ -63,6 +52,7 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     hasUnsavedChanges,
     setHasUnsavedChanges,
     setMeals,
+    setLoading,
   } = useFetchMeals({
     API_BASE_URL,
     isAuthenticated,
@@ -89,6 +79,8 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
 
   const checkForUnsavedChanges = useCallback(() => {
+    if (!originalMeals || !meals) return false;
+
     if (meals.length !== originalMeals.length) {
       return true;
     }
@@ -179,7 +171,12 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
     setHasUnsavedChanges(false);
 
     if (navigationAttempt !== null) {
-      console.info("Navigating after discard:", navigationAttempt);
+      if (navigationAttempt.includes("-")) {
+        dateJustChangedRef.current = true;
+        setSelectedDate(navigationAttempt);
+      } else {
+        console.info("Navigating after discard:", navigationAttempt);
+      }
       setNavigationAttempt(null);
     }
   };
@@ -197,25 +194,27 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && getUserId(user) && selectedDate) {
+    const shouldFetch =
+      isAuthenticated &&
+      user &&
+      getUserId(user) &&
+      selectedDate &&
+      authInitialized;
+
+    if (shouldFetch) {
+      console.log("Fetching meals for date:", selectedDate);
       fetchMealsForDate(selectedDate);
     } else if (authInitialized && !isAuthenticated) {
       setMeals([]);
     }
-  }, [
-    selectedDate,
-    isAuthenticated,
-    user,
-    authInitialized,
-    fetchMealsForDate,
-    setMeals,
-  ]);
+  }, [selectedDate, isAuthenticated, authInitialized]);
 
   const handleDateChange = (dateString: string) => {
     if (hasUnsavedChanges) {
       setNavigationAttempt(dateString);
       setDiscardChangesDialogOpen(true);
     } else {
+      dateJustChangedRef.current = true;
       setSelectedDate(dateString);
     }
   };
@@ -255,14 +254,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
           );
         });
       }
-
-      // Note: This current save logic doesn't handle deleting meals that were previously saved but are
-      // now removed from the 'meals' state locally before hitting 'Save Daily Meals'.
-      // A more robust approach would involve comparing initial meals (on fetch)
-      // with the final meals state to determine deletions, or relying solely on the
-      // individual delete button which is handled below. For simplicity, we'll stick
-      // to just saving/updating the meals currently in the list when the "Save Daily Meals" button is clicked.
-      // Individual deletion is handled by the delete button and confirmation.
 
       await Promise.all(savePromises);
       showNotification("Meals saved successfully!", "success");
