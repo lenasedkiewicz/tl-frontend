@@ -1,18 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  TextField,
   Button,
   Snackbar,
   Box,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   CircularProgress,
   Stack,
   Paper,
@@ -30,11 +21,9 @@ import { sortMealsByTime } from "../components/helperfunctions/MealHelpers";
 import { ConfirmationDialog } from "../components/common/ConfirmationDialog";
 import { CalendarDatePicker } from "../components/common/CalendarDatePicker";
 import { MealCardItem } from "../components/meal/MealCardItem";
-import {
-  formatTime,
-  generateTimeOptions,
-} from "../components/helperfunctions/TimeHelpers";
 import { getUserId } from "../components/helperfunctions/AuthHelpers";
+import { MealDialog } from "../components/meal/MealDialog";
+import { useFetchMeals } from "../hooks/useFetchMeals";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -60,21 +49,34 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
   const { isAuthenticated, user, token } = useAuth();
   const { notification, showNotification, hideNotification } =
     useNotification();
-  const [loading, setLoading] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     formatISO(new Date(), { representation: "date" }),
   );
-  const [meals, setMeals] = useState<MealData[]>([]);
-  const [originalMeals, setOriginalMeals] = useState<MealData[]>([]);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Use our custom hook for meal fetching, with change tracking enabled
+  const {
+    meals,
+    loading,
+    fetchMealsForDate,
+    originalMeals,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+    setMeals,
+  } = useFetchMeals({
+    API_BASE_URL,
+    isAuthenticated,
+    getUserId,
+    user,
+    showNotification,
+    trackOriginalMeals: true,
+  });
+
   const [discardChangesDialogOpen, setDiscardChangesDialogOpen] =
     useState(false);
   const [navigationAttempt, setNavigationAttempt] = useState<string | null>(
     null,
   );
-
-  const timeOptions = generateTimeOptions();
 
   const [mealDialogOpen, setMealDialogOpen] = useState(false);
   const [currentMealIndex, setCurrentMealIndex] = useState<number | null>(null);
@@ -111,7 +113,7 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
 
   useEffect(() => {
     setHasUnsavedChanges(checkForUnsavedChanges());
-  }, [meals, checkForUnsavedChanges]);
+  }, [meals, checkForUnsavedChanges, setHasUnsavedChanges]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -199,53 +201,15 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
       fetchMealsForDate(selectedDate);
     } else if (authInitialized && !isAuthenticated) {
       setMeals([]);
-      setOriginalMeals([]);
-      setLoading(false);
     }
-  }, [selectedDate, isAuthenticated, user, authInitialized]);
-
-  const fetchMealsForDate = async (date: string) => {
-    if (!isAuthenticated || !getUserId(user) || !date) return;
-
-    setLoading(true);
-    try {
-      const userId = getUserId(user);
-      const response = await axios.get(
-        `${API_BASE_URL}/meals/user/${userId}/date/${date}`,
-      );
-
-      if (response.data && Array.isArray(response.data)) {
-        const formattedMeals = response.data.map((meal: any) => ({
-          _id: meal._id,
-          name: meal.name,
-          hour: meal.hour,
-          minute: meal.minute,
-          content: meal.content,
-          date: meal.date,
-        }));
-        setMeals(formattedMeals);
-        setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals)));
-        setHasUnsavedChanges(false);
-      } else {
-        console.error("Unexpected response format:", response.data);
-        setMeals([]);
-        setOriginalMeals([]);
-      }
-    } catch (err: any) {
-      console.error("Error fetching meals:", err);
-      if (err.response?.status !== 404) {
-        showNotification(
-          `Failed to load meals: ${err.message || "Unknown error"}`,
-          "error",
-        );
-      } else {
-        setMeals([]);
-        setOriginalMeals([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [
+    selectedDate,
+    isAuthenticated,
+    user,
+    authInitialized,
+    fetchMealsForDate,
+    setMeals,
+  ]);
 
   const handleDateChange = (dateString: string) => {
     if (hasUnsavedChanges) {
@@ -337,7 +301,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
 
         const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
         setMeals(updatedMeals);
-        setOriginalMeals(updatedMeals);
 
         showNotification("Meal deleted successfully", "success");
         setHasUnsavedChanges(false);
@@ -391,7 +354,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
       );
 
       setMeals([]);
-      setOriginalMeals([]);
       setHasUnsavedChanges(false);
 
       showNotification(
@@ -446,158 +408,6 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
       setMeals([...meals, mealWithDate]);
     }
     handleMealDialogClose();
-  };
-
-  // TO DO:
-  // Keeping it inline for access to parent state/handlers, but could be extracted
-  // by passing `meal`, `onSave`, `onClose`, `timeOptions`, etc. as props.
-  const MealDialog = () => {
-    const [dialogMealState, setDialogMealState] = useState<MealData>(() => {
-      if (currentMealIndex !== null && meals[currentMealIndex]) {
-        return { ...meals[currentMealIndex] };
-      }
-      return {
-        name: "",
-        hour: 12,
-        minute: 0o0,
-        content: "",
-        date: selectedDate,
-      };
-    });
-
-    useEffect(() => {
-      setDialogMealState((prevMeal) => {
-        const baseMeal =
-          currentMealIndex !== null && meals[currentMealIndex]
-            ? meals[currentMealIndex]
-            : { name: "", hour: 12, minute: 0, content: "" };
-        return {
-          ...baseMeal,
-          date: selectedDate,
-          // TO DO: Keep existing name/content/time if editing the same meal index across date changes?
-          // Or reset if date changes while editing? Resetting is simpler:
-          ...(currentMealIndex === null ||
-          !meals[currentMealIndex] ||
-          meals[currentMealIndex].date !== selectedDate
-            ? {
-                name: "",
-                hour: 12,
-                minute: 0,
-                content: "",
-              }
-            : {}),
-        };
-      });
-    }, [selectedDate, currentMealIndex, meals]);
-
-    const handleTimeChange = (e: React.ChangeEvent<{ value: unknown }>) => {
-      const selectedTimeValue = e.target.value as string;
-      const [hourStr, minuteStr] = selectedTimeValue.split(":");
-      setDialogMealState({
-        ...dialogMealState,
-        hour: parseInt(hourStr, 10),
-        minute: parseInt(minuteStr, 10),
-      });
-    };
-
-    const isValid =
-      dialogMealState.name.trim() &&
-      dialogMealState.content.trim() &&
-      dialogMealState.content.length >= 5;
-
-    return (
-      <Dialog
-        open={mealDialogOpen}
-        onClose={handleMealDialogClose}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          {currentMealIndex !== null ? "Edit Meal Details" : "Add New Meal"}
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              select
-              label="Meal Name"
-              value={dialogMealState.name}
-              onChange={(e) =>
-                setDialogMealState({ ...dialogMealState, name: e.target.value })
-              }
-              fullWidth
-              required
-              autoFocus
-              error={dialogMealState.name.trim() === ""}
-              helperText={
-                dialogMealState.name.trim() === ""
-                  ? "Meal name is required"
-                  : ""
-              }
-            >
-              {MEAL_NAME_CHOICES.map((choice) => (
-                <MenuItem key={choice} value={choice}>
-                  {choice}
-                </MenuItem>
-              ))}
-            </TextField>
-            <FormControl fullWidth required>
-              <InputLabel id="time-select-label">Time</InputLabel>
-              <Select
-                labelId="time-select-label"
-                value={formatTime(dialogMealState.hour, dialogMealState.minute)}
-                label="Time"
-                onChange={handleTimeChange}
-              >
-                {timeOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label="Meal Content"
-              value={dialogMealState.content}
-              onChange={(e) =>
-                setDialogMealState({
-                  ...dialogMealState,
-                  content: e.target.value,
-                })
-              }
-              multiline
-              rows={4}
-              fullWidth
-              required
-              error={
-                dialogMealState.content.length > 0 &&
-                dialogMealState.content.length < 5
-              }
-              helperText={
-                dialogMealState.content.length > 0 &&
-                dialogMealState.content.length < 5
-                  ? "Min 5 characters required"
-                  : ""
-              }
-            />
-            <Typography variant="caption" color="text.secondary">
-              Meal date: {selectedDate}
-            </Typography>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleMealDialogClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => handleMealDialogSave(dialogMealState)}
-            variant="contained"
-            disabled={!isValid || loading}
-          >
-            {currentMealIndex !== null ? "Update Meal" : "Add Meal"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
   };
 
   if (!isAuthenticated && authInitialized) {
@@ -714,7 +524,15 @@ export const AddEditMealsView: React.FC<AddEditMealsViewProps> = ({
         Save Daily Meals
       </Button>
 
-      <MealDialog />
+      <MealDialog
+        open={mealDialogOpen}
+        onClose={handleMealDialogClose}
+        onSave={handleMealDialogSave}
+        meal={currentMealIndex !== null ? meals[currentMealIndex] : undefined}
+        currentMealIndex={currentMealIndex}
+        meals={meals}
+        selectedDate={selectedDate}
+      />
 
       <ConfirmationDialog
         open={deleteSingleConfirmOpen}
