@@ -36,13 +36,10 @@ export const useFetchMeals = ({
   const [originalMeals, setOriginalMeals] = useState<MealData[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  // Keep track of the userId to avoid unnecessary re-renders
   const userIdRef = useRef<string | null>(null);
 
-  // Use this to prevent duplicate requests for the same date
   const activeRequestRef = useRef<string | null>(null);
 
-  // Update the user ID reference whenever the user object changes
   useEffect(() => {
     if (user && isAuthenticated) {
       try {
@@ -58,23 +55,19 @@ export const useFetchMeals = ({
   }, [user, isAuthenticated, getUserId]);
 
   const fetchMealsForDate = useCallback(async (date: string) => {
-    // Exit early if required data is missing
     if (!isAuthenticated || !date) {
       console.log("Fetch skipped: Missing authentication or date");
       return;
     }
 
-    // Get userId from our ref to avoid dependency on user object in useCallback
     const userId = userIdRef.current;
     if (!userId) {
       console.log("Fetch skipped: No user ID available");
       return;
     }
 
-    // Create a unique request key to prevent duplicate requests
     const requestKey = `${userId}-${date}`;
 
-    // Skip if this exact request is already in progress
     if (activeRequestRef.current === requestKey) {
       console.log("Duplicate request prevented:", requestKey);
       return;
@@ -103,7 +96,6 @@ export const useFetchMeals = ({
         setMeals(formattedMeals);
 
         if (trackOriginalMeals) {
-          // Create a deep copy to avoid reference issues
           setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals)));
           setHasUnsavedChanges(false);
         }
@@ -135,7 +127,6 @@ export const useFetchMeals = ({
       }
     } finally {
       setLoading(false);
-      // Clear the active request flag after a short delay to prevent immediate duplicate calls
       setTimeout(() => {
         if (activeRequestRef.current === requestKey) {
           activeRequestRef.current = null;
@@ -143,9 +134,7 @@ export const useFetchMeals = ({
       }, 100);
     }
   }, [API_BASE_URL, isAuthenticated, showNotification, trackOriginalMeals]);
-  // Removed getUserId and user from dependencies ^^
 
-  // Build the return object
   const returnObj: UseFetchMealsReturn = {
     meals,
     loading,

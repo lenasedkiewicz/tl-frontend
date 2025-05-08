@@ -96,8 +96,6 @@ export const MealDialog: React.FC<MealDialogProps> = ({
   };
 
   const handleInternalSave = () => {
-    // Ensure the date is the current selectedDate from the parent
-    // and all other fields are from the dialog's state.
     onSave({ ...dialogMealState, date: selectedDate });
   };
 
@@ -117,13 +115,13 @@ export const MealDialog: React.FC<MealDialogProps> = ({
           <TextField
             select
             label="Meal Name"
-            name="name" // Added name attribute for handleInputChange
+            name="name"
             value={dialogMealState.name}
             onChange={handleInputChange}
             fullWidth
             required
-            autoFocus // Good for accessibility on dialog open
-            error={!isMealNameValid && dialogMealState.name !== ""} // Show error if touched and invalid
+            autoFocus
+            error={!isMealNameValid && dialogMealState.name !== ""}
             helperText={
               !isMealNameValid && dialogMealState.name !== ""
                 ? "Meal name is required"
@@ -155,20 +153,20 @@ export const MealDialog: React.FC<MealDialogProps> = ({
 
           <TextField
             label="Meal Content"
-            name="content" // Added name attribute for handleInputChange
+            name="content"
             value={dialogMealState.content}
             onChange={handleInputChange}
             multiline
             rows={4}
             fullWidth
             required
-            error={!isMealContentValid && dialogMealState.content.trim() !== ""} // Show error if touched and invalid
+            error={!isMealContentValid && dialogMealState.content.trim() !== ""}
             helperText={
               !isMealContentValid && dialogMealState.content.trim() !== ""
                 ? "Content must be at least 5 characters."
                 : dialogMealState.content.trim() === "" &&
                     dialogMealState.content !== ""
-                  ? "Content is required." // Differentiate between too short and empty after touch
+                  ? "Content is required."
                   : ""
             }
           />
