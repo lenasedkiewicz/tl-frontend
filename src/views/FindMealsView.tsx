@@ -6,8 +6,8 @@ import {
   CircularProgress,
   Stack,
   Paper,
+  Alert as MuiAlert,
 } from "@mui/material";
-import { Alert } from "@mui/material";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
@@ -23,8 +23,11 @@ const API_BASE_URL = "http://localhost:5000";
 
 export const FindMealsView: React.FC = () => {
   const { isAuthenticated, user, token } = useAuth();
-  const { notification, showNotification, hideNotification } =
+  const { notifications, showNotification, hideNotification } =
     useNotification();
+  const [currentNotification, setCurrentNotification] = useState<
+    (typeof notifications)[0] | null
+  >(null);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     formatISO(new Date(), { representation: "date" }),
@@ -52,6 +55,14 @@ export const FindMealsView: React.FC = () => {
       setLoading(false);
     }
   }, [selectedDate, isAuthenticated, user, authInitialized]);
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setCurrentNotification(notifications[0]);
+    } else {
+      setCurrentNotification(null);
+    }
+  }, [notifications]);
 
   const fetchMealsForDate = async (date: string) => {
     if (!isAuthenticated || !getUserId(user) || !date) return;
@@ -98,7 +109,11 @@ export const FindMealsView: React.FC = () => {
   const handleDateChange = (dateString: string) => {
     setSelectedDate(dateString);
   };
-
+  const handleClose = () => {
+    if (currentNotification) {
+      hideNotification(currentNotification.id);
+    }
+  };
   if (!isAuthenticated && authInitialized) {
     return (
       <Box sx={{ maxWidth: 700, margin: "auto", mt: 4 }}>
@@ -133,25 +148,26 @@ export const FindMealsView: React.FC = () => {
           ))}
         </Stack>
       ) : (
-        <Alert severity="info" sx={{ my: 2 }}>
+        <MuiAlert severity="info" sx={{ my: 2 }}>
           No meals found for {selectedDate}.
-        </Alert>
+        </MuiAlert>
       )}
-
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={6000}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        onClose={hideNotification}
-      >
-        <Alert
-          severity={notification.type}
-          onClose={hideNotification}
-          sx={{ width: "100%" }}
+      {currentNotification && (
+        <Snackbar
+          open={true}
+          autoHideDuration={currentNotification.duration || 6000}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          onClose={handleClose}
         >
-          {notification.message}
-        </Alert>
-      </Snackbar>
+          <MuiAlert
+            severity={currentNotification.type}
+            onClose={handleClose}
+            sx={{ width: "100%" }}
+          >
+            {currentNotification.message}
+          </MuiAlert>
+        </Snackbar>
+      )}
     </Paper>
   );
 };

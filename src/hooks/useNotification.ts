@@ -20,14 +20,13 @@ export const useNotification = (): UseNotificationReturn => {
   const [notifications, setNotifications] = useState<NotificationMessage[]>([]);
 
   const showNotification = (
-    open: boolean,
     message: string,
     type: NotificationType,
     duration: number = 5000
   ) => {
     const id = Date.now().toString();
     const newNotification: NotificationMessage = {
-      open,
+      open: true,
       id,
       message,
       type,
