@@ -7,20 +7,20 @@ interface UseFetchMealsOptions {
   API_BASE_URL: string;
   isAuthenticated: boolean;
   getUserId: (user: User) => string;
-  user: User;
-  showNotification?: (message: string, type: 'success' | 'error' | 'info') => void;
+  user: User | undefined;
+  showNotification?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   trackOriginalMeals?: boolean;
 }
 
-interface UseFetchMealsReturn {
+export interface UseFetchMealsReturn {
   meals: MealData[];
-  loading: boolean;
-  fetchMealsForDate: (date: string) => Promise<void>;
-  originalMeals?: MealData[];
-  hasUnsavedChanges?: boolean;
-  setHasUnsavedChanges?: (hasChanges: boolean) => void;
   setMeals: React.Dispatch<React.SetStateAction<MealData[]>>;
+  loading: boolean;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  fetchMealsForDate: (date: string) => Promise<void>;
+  originalMeals: MealData[] | undefined;
+  hasUnsavedChanges: boolean | undefined;
+  setHasUnsavedChanges: React.Dispatch<React.SetStateAction<boolean | undefined>> | undefined;
 }
 
 export const useFetchMeals = ({
@@ -33,11 +33,10 @@ export const useFetchMeals = ({
 }: UseFetchMealsOptions): UseFetchMealsReturn => {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [originalMeals, setOriginalMeals] = useState<MealData[]>([]);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const [originalMealsState, setOriginalMealsState] = useState<MealData[] | undefined>(trackOriginalMeals ? [] : undefined);
+  const [hasUnsavedChangesState, setHasUnsavedChangesState] = useState<boolean | undefined>(trackOriginalMeals ? false : undefined);
 
   const userIdRef = useRef<string | null>(null);
-
   const activeRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -46,7 +45,7 @@ export const useFetchMeals = ({
         const id = getUserId(user);
         userIdRef.current = id || null;
       } catch (error) {
-        console.error("Error getting user ID:", error);
+        console.error("Error getting user ID in useFetchMeals:", error);
         userIdRef.current = null;
       }
     } else {
@@ -56,20 +55,27 @@ export const useFetchMeals = ({
 
   const fetchMealsForDate = useCallback(async (date: string) => {
     if (!isAuthenticated || !date) {
-      console.log("Fetch skipped: Missing authentication or date");
+      setMeals([]);
+      if (trackOriginalMeals) {
+        setOriginalMealsState([]);
+        if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
+      }
       return;
     }
 
-    const userId = userIdRef.current;
-    if (!userId) {
-      console.log("Fetch skipped: No user ID available");
+    const currentUserId = userIdRef.current;
+    if (!currentUserId) {
+      setMeals([]);
+      if (trackOriginalMeals) {
+        setOriginalMealsState([]);
+        if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
+      }
       return;
     }
 
-    const requestKey = `${userId}-${date}`;
+    const requestKey = `${currentUserId}-${date}`;
 
-    if (activeRequestRef.current === requestKey) {
-      console.log("Duplicate request prevented:", requestKey);
+    if (activeRequestRef.current === requestKey && loading) {
       return;
     }
 
@@ -77,14 +83,16 @@ export const useFetchMeals = ({
     setLoading(true);
 
     try {
-      console.log(`Fetching meals from: ${API_BASE_URL}/meals/user/${userId}/date/${date}`);
-
-      const response = await axios.get(
-        `${API_BASE_URL}/meals/user/${userId}/date/${date}`
+      const response = await axios.get<MealData[]>(
+        `${API_BASE_URL}/meals/user/${currentUserId}/date/${date}`
       );
 
+      if (activeRequestRef.current !== requestKey) {
+        return;
+      }
+
       if (response.data && Array.isArray(response.data)) {
-        const formattedMeals = response.data.map((meal: any) => ({
+        const fetchedMeals: MealData[] = response.data.map(meal => ({
           _id: meal._id,
           name: meal.name,
           hour: meal.hour,
@@ -93,60 +101,73 @@ export const useFetchMeals = ({
           date: meal.date,
         }));
 
-        setMeals(formattedMeals);
+        setMeals(fetchedMeals);
 
         if (trackOriginalMeals) {
-          setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals)));
-          setHasUnsavedChanges(false);
+          setOriginalMealsState(JSON.parse(JSON.stringify(fetchedMeals)));
+          if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
         }
       } else {
-        console.error("Unexpected response format:", response.data);
         if (showNotification) {
-          showNotification("Received unexpected data format from server", "error");
+          showNotification("Received unexpected data format from server.", "error");
         }
         setMeals([]);
         if (trackOriginalMeals) {
-          setOriginalMeals([]);
+          setOriginalMealsState([]);
         }
       }
     } catch (err: any) {
-      console.error("Error fetching meals:", err);
 
-      if (err.response?.status !== 404) {
-        if (showNotification) {
-          showNotification(
-            `Failed to load meals: ${err.message || "Unknown error"}`,
-            "error"
-          );
-        }
+      if (activeRequestRef.current !== requestKey) {
+        return;
       }
 
-      setMeals([]);
-      if (trackOriginalMeals) {
-        setOriginalMeals([]);
+      if (err.response?.status === 404) {
+        setMeals([]);
+        if (trackOriginalMeals) {
+          setOriginalMealsState([]);
+          if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
+        }
+      } else if (showNotification) {
+        showNotification(
+          `Failed to load meals: ${err.message || "Unknown server error."}`,
+          "error"
+        );
+        setMeals([]);
+        if (trackOriginalMeals) {
+          setOriginalMealsState([]);
+        }
+      } else {
+        setMeals([]);
+        if (trackOriginalMeals) {
+          setOriginalMealsState([]);
+        }
       }
     } finally {
-      setLoading(false);
-      setTimeout(() => {
-        if (activeRequestRef.current === requestKey) {
-          activeRequestRef.current = null;
-        }
-      }, 100);
-    }
-  }, [API_BASE_URL, isAuthenticated, showNotification, trackOriginalMeals]);
 
-  const returnObj: UseFetchMealsReturn = {
-    meals,
+      if (activeRequestRef.current === requestKey) {
+        activeRequestRef.current = null;
+      }
+      setLoading(false);
+    }
+  }, [
+    API_BASE_URL,
+    isAuthenticated,
+    showNotification,
+    trackOriginalMeals,
     loading,
-    fetchMealsForDate,
+  ]);
+
+  const returnValues: UseFetchMealsReturn = {
+    meals,
     setMeals,
+    loading,
+    setLoading,
+    fetchMealsForDate,
+    originalMeals: trackOriginalMeals ? originalMealsState : undefined,
+    hasUnsavedChanges: trackOriginalMeals ? hasUnsavedChangesState : undefined,
+    setHasUnsavedChanges: trackOriginalMeals ? setHasUnsavedChangesState : undefined,
   };
 
-  if (trackOriginalMeals) {
-    returnObj.originalMeals = originalMeals;
-    returnObj.hasUnsavedChanges = hasUnsavedChanges;
-    returnObj.setHasUnsavedChanges = setHasUnsavedChanges;
-  }
-
-  return returnObj;
+  return returnValues;
 };
