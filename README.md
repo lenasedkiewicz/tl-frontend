@@ -1,50 +1,113 @@
-# React + TypeScript + Vite
+# Meal Management System - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern React-based web application for managing meals with user authentication, built with TypeScript, Material UI, and Vite.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **User Authentication**: Complete authentication flow with login, registration, and account management
+- **Meal Management**: Add, edit, find, and manage meals
+- **Responsive UI**: Built with Material UI for a consistent and responsive user experience
+- **Type Safety**: Fully typed with TypeScript for better development experience and code quality
+- **Form Handling**: Robust form management with react-hook-form and yup validation
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```
+frontend/
+├── dist/                 # Build output directory
+├── node_modules/         # Dependencies
+├── src/                  # Source code
+│   ├── components/       # Reusable UI components
+│   │   ├── authentication/  # Authentication-related components
+│   │   ├── common/       # Common reusable components
+│   │   ├── helperfunctions/ # Helper functions for components
+│   │   ├── meal/         # Meal-related components
+│   │   ├── context/      # React context providers
+│   │   └── hooks/        # Custom React hooks
+│   ├── interfaces/       # TypeScript interfaces
+│   ├── views/            # Page components
+│   ├── App.tsx           # Main application component
+│   └── main.tsx          # Application entry point
+├── .gitignore            # Git ignore file
+├── .prettierrc           # Prettier configuration
+├── eslint.config.js      # ESLint configuration
+├── index.html            # HTML entry point
+├── package-lock.json     # Dependency lock file
+├── package.json          # Project metadata and dependencies
+├── README.md             # Project documentation (this file)
+├── tsconfig.json         # TypeScript configuration
+└── vite.config.ts        # Vite configuration
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Key Components
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+- **Authentication**: Complete authentication flow with context management
+- **Calendar & Date Picker**: Custom calendar component for date selection
+- **Confirmation Dialogs**: Reusable dialog components for user interactions
+- **Meal Components**: Components for displaying and managing meal information
+- **Menu Drawer**: Navigation component for the application
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## Prerequisites
+
+- Node.js 18.x or higher
+- npm 9.x or higher
+
+## Getting Started
+
+1. Clone the repository
+
+   ```bash
+   git clone <repository-url>
+   cd frontend
+   ```
+
+2. Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+3. Start the development server
+
+   ```bash
+   npm run dev
+   ```
+
+4. Access the application at `http://localhost:5173` (or the port shown in the console)
+
+## Available Scripts
+
+- `npm run dev` - Start the development server
+- `npm run build` - Build the production-ready application
+- `npm run lint` - Lint the project with ESLint
+- `npm run preview` - Preview the production build locally
+
+## Technologies Used
+
+- **React 19**: Library for building user interfaces
+- **TypeScript**: Typed JavaScript for better development experience
+- **Material UI 6**: Component library for consistent UI
+- **React Router 7**: For client-side routing
+- **React Hook Form**: For form state management and validation
+- **Yup**: Schema validation library
+- **Axios**: HTTP client for API requests
+- **Vite**: Next generation frontend tooling for fast development
+
+## Development Practices
+
+- **Type Safety**: All components and functions are properly typed for better code quality
+- **Component Reusability**: Focus on creating reusable components for consistency
+- **Code Organization**: Well-structured code with separation of concerns
+- **Modern React Patterns**: Usage of hooks, context API, and functional components
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
