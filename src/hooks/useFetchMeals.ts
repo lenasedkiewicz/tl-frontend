@@ -20,13 +20,8 @@ export const useFetchMeals = ({
 
   useEffect(() => {
     if (user && isAuthenticated) {
-      try {
-        const id = getUserId(user);
-        userIdRef.current = id || null;
-      } catch (error) {
-        console.error("Error getting user ID:", error);
-        userIdRef.current = null;
-      }
+      const id = getUserId(user);
+      userIdRef.current = id || null;
     } else {
       userIdRef.current = null;
     }
