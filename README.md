@@ -10,35 +10,6 @@ A modern React-based web application for managing meals with user authentication
 - **Type Safety**: Fully typed with TypeScript for better development experience and code quality
 - **Form Handling**: Robust form management with react-hook-form and yup validation
 
-## Project Structure
-
-```
-frontend/
-├── dist/                 # Build output directory
-├── node_modules/         # Dependencies
-├── src/                  # Source code
-│   ├── components/       # Reusable UI components
-│   │   ├── authentication/  # Authentication-related components
-│   │   ├── common/       # Common reusable components
-│   │   ├── helperfunctions/ # Helper functions for components
-│   │   ├── meal/         # Meal-related components
-│   │   ├── context/      # React context providers
-│   │   └── hooks/        # Custom React hooks
-│   ├── interfaces/       # TypeScript interfaces
-│   ├── views/            # Page components
-│   ├── App.tsx           # Main application component
-│   └── main.tsx          # Application entry point
-├── .gitignore            # Git ignore file
-├── .prettierrc           # Prettier configuration
-├── eslint.config.js      # ESLint configuration
-├── index.html            # HTML entry point
-├── package-lock.json     # Dependency lock file
-├── package.json          # Project metadata and dependencies
-├── README.md             # Project documentation (this file)
-├── tsconfig.json         # TypeScript configuration
-└── vite.config.ts        # Vite configuration
-```
-
 ## Key Components
 
 - **Authentication**: Complete authentication flow with context management
