@@ -1,3 +1,5 @@
+import { NotificationType } from "../types/MealTypes.types";
+
 export interface MealData {
   _id?: string;
   name: string;
@@ -25,8 +27,6 @@ export interface MealCardItemProps {
   onDelete?: () => void;
   loading?: boolean;
 }
-
-export type NotificationType = "success" | "error" | "info" | "warning";
 
 export interface NotificationState {
   open: boolean;
