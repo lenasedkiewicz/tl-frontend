@@ -1,27 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { MealData } from '../interfaces/MealInterfaces';
-import { User } from '../interfaces/AuthInterfaces';
-
-interface UseFetchMealsOptions {
-  API_BASE_URL: string;
-  isAuthenticated: boolean;
-  getUserId: (user: User) => string;
-  user: User;
-  showNotification?: (message: string, type: 'success' | 'error' | 'info') => void;
-  trackOriginalMeals?: boolean;
-}
-
-interface UseFetchMealsReturn {
-  meals: MealData[];
-  loading: boolean;
-  fetchMealsForDate: (date: string) => Promise<void>;
-  originalMeals?: MealData[];
-  hasUnsavedChanges?: boolean;
-  setHasUnsavedChanges?: (hasChanges: boolean) => void;
-  setMeals: React.Dispatch<React.SetStateAction<MealData[]>>;
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
-}
+import { MealData, UseFetchMealsOptions, UseFetchMealsReturn } from '../interfaces/MealInterfaces';
 
 export const useFetchMeals = ({
   API_BASE_URL,
