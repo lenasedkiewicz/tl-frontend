@@ -1,10 +1,8 @@
+import { OptionType } from "../../types/TimeTypes.types";
+
 export const formatTime = (hour: number, minute: number): string => {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 };
-
-type OptionType = Readonly<{
-  label: string, value: string, hour: number, minute: number
-}>
 
 export const generateTimeOptions = (): OptionType[] => {
   const options: OptionType[] = [];

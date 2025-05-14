@@ -1,27 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { MealData } from '../interfaces/MealInterfaces';
-import { User } from '../interfaces/AuthInterfaces';
-
-interface UseFetchMealsOptions {
-  API_BASE_URL: string;
-  isAuthenticated: boolean;
-  getUserId: (user: User) => string;
-  user: User | undefined;
-  showNotification?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
-  trackOriginalMeals?: boolean;
-}
-
-export interface UseFetchMealsReturn {
-  meals: MealData[];
-  setMeals: React.Dispatch<React.SetStateAction<MealData[]>>;
-  loading: boolean;
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  fetchMealsForDate: (date: string) => Promise<void>;
-  originalMeals: MealData[] | undefined;
-  hasUnsavedChanges: boolean | undefined;
-  setHasUnsavedChanges: React.Dispatch<React.SetStateAction<boolean | undefined>> | undefined;
-}
+import { MealData, UseFetchMealsOptions, UseFetchMealsReturn } from '../interfaces/MealInterfaces';
 
 export const useFetchMeals = ({
   API_BASE_URL,
@@ -41,13 +20,8 @@ export const useFetchMeals = ({
 
   useEffect(() => {
     if (user && isAuthenticated) {
-      try {
-        const id = getUserId(user);
-        userIdRef.current = id || null;
-      } catch (error) {
-        console.error("Error getting user ID in useFetchMeals:", error);
-        userIdRef.current = null;
-      }
+      const id = getUserId(user);
+      userIdRef.current = id || null;
     } else {
       userIdRef.current = null;
     }
@@ -73,101 +47,94 @@ export const useFetchMeals = ({
       return;
     }
 
-    const requestKey = `${currentUserId}-${date}`;
-
-    if (activeRequestRef.current === requestKey && loading) {
+    const requestKey = `${userId}-${date}`;
+    if (activeRequestRef.current === requestKey) {
+      console.log("Duplicate request prevented:", requestKey);
       return;
     }
 
     activeRequestRef.current = requestKey;
     setLoading(true);
 
+    let responseData = null;
+    let fetchError = null;
+
     try {
-      const response = await axios.get<MealData[]>(
-        `${API_BASE_URL}/meals/user/${currentUserId}/date/${date}`
-      );
-
-      if (activeRequestRef.current !== requestKey) {
-        return;
-      }
-
-      if (response.data && Array.isArray(response.data)) {
-        const fetchedMeals: MealData[] = response.data.map(meal => ({
-          _id: meal._id,
-          name: meal.name,
-          hour: meal.hour,
-          minute: meal.minute,
-          content: meal.content,
-          date: meal.date,
-        }));
-
-        setMeals(fetchedMeals);
-
-        if (trackOriginalMeals) {
-          setOriginalMealsState(JSON.parse(JSON.stringify(fetchedMeals)));
-          if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
-        }
-      } else {
-        if (showNotification) {
-          showNotification("Received unexpected data format from server.", "error");
-        }
-        setMeals([]);
-        if (trackOriginalMeals) {
-          setOriginalMealsState([]);
-        }
-      }
+      console.log(`Fetching meals from: ${API_BASE_URL}/meals/user/${userId}/date/${date}`);
+      const response = await axios.get(`${API_BASE_URL}/meals/user/${userId}/date/${date}`);
+      responseData = response.data;
     } catch (err: any) {
-
-      if (activeRequestRef.current !== requestKey) {
-        return;
-      }
-
-      if (err.response?.status === 404) {
-        setMeals([]);
-        if (trackOriginalMeals) {
-          setOriginalMealsState([]);
-          if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
+      fetchError = err;
+      console.error("Error fetching meals:", err);
+    } finally {
+      setTimeout(() => {
+        if (activeRequestRef.current === requestKey) {
+          activeRequestRef.current = null;
         }
-      } else if (showNotification) {
+      }, 100);
+    }
+
+    if (fetchError) {
+      if (fetchError.response?.status !== 404 && showNotification) {
         showNotification(
-          `Failed to load meals: ${err.message || "Unknown server error."}`,
+          `Failed to load meals: ${fetchError.message || "Unknown error"}`,
           "error"
         );
-        setMeals([]);
-        if (trackOriginalMeals) {
-          setOriginalMealsState([]);
-        }
-      } else {
-        setMeals([]);
-        if (trackOriginalMeals) {
-          setOriginalMealsState([]);
-        }
       }
-    } finally {
 
-      if (activeRequestRef.current === requestKey) {
-        activeRequestRef.current = null;
+      setMeals([]);
+      if (trackOriginalMeals) {
+        setOriginalMeals([]);
       }
-      setLoading(false);
+    } else if (responseData && Array.isArray(responseData)) {
+      const formattedMeals = responseData.map((meal: any) => ({
+        _id: meal._id,
+        name: meal.name,
+        hour: meal.hour,
+        minute: meal.minute,
+        content: meal.content,
+        date: meal.date,
+      }));
+
+      setMeals(formattedMeals);
+
+      if (trackOriginalMeals) {
+        setOriginalMeals(JSON.parse(JSON.stringify(formattedMeals)));
+        setHasUnsavedChanges(false);
+      }
+    } else {
+      console.error("Unexpected response format:", responseData);
+      if (showNotification) {
+        showNotification("Received unexpected data format from server", "error");
+      }
+
+      setMeals([]);
+      if (trackOriginalMeals) {
+        setOriginalMeals([]);
+      }
     }
+
+    setLoading(false);
+  }, [API_BASE_URL, isAuthenticated, showNotification, trackOriginalMeals]);
+
+  if (activeRequestRef.current === requestKey) {
+    activeRequestRef.current = null;
+  }
+  setLoading(false);
+}
   }, [
-    API_BASE_URL,
-    isAuthenticated,
-    showNotification,
-    trackOriginalMeals,
-    loading,
-  ]);
+  API_BASE_URL,
+  isAuthenticated,
+  showNotification,
+  trackOriginalMeals,
+  loading,
+]);
 
-  const returnValues: UseFetchMealsReturn = {
-    meals,
-    setMeals,
-    loading,
-    setLoading,
-    fetchMealsForDate,
-    originalMeals: trackOriginalMeals ? originalMealsState : undefined,
-    hasUnsavedChanges: trackOriginalMeals ? hasUnsavedChangesState : undefined,
-    setHasUnsavedChanges: trackOriginalMeals ? setHasUnsavedChangesState : undefined,
-  };
+const returnValues: UseFetchMealsReturn = {
+  meals,
+  setMeals,
+  setLoading,
+};
 
-  return returnValues;
+return returnValues;
 };
