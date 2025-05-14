@@ -12,8 +12,8 @@ export const useFetchMeals = ({
 }: UseFetchMealsOptions): UseFetchMealsReturn => {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [originalMealsState, setOriginalMealsState] = useState<MealData[] | undefined>(trackOriginalMeals ? [] : undefined);
-  const [hasUnsavedChangesState, setHasUnsavedChangesState] = useState<boolean | undefined>(trackOriginalMeals ? false : undefined);
+  const [originalMeals, setOriginalMeals] = useState<MealData[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
   const userIdRef = useRef<string | null>(null);
   const activeRequestRef = useRef<string | null>(null);
@@ -29,21 +29,13 @@ export const useFetchMeals = ({
 
   const fetchMealsForDate = useCallback(async (date: string) => {
     if (!isAuthenticated || !date) {
-      setMeals([]);
-      if (trackOriginalMeals) {
-        setOriginalMealsState([]);
-        if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
-      }
+      console.info("Fetch skipped: Missing authentication or date");
       return;
     }
 
-    const currentUserId = userIdRef.current;
-    if (!currentUserId) {
-      setMeals([]);
-      if (trackOriginalMeals) {
-        setOriginalMealsState([]);
-        if (setHasUnsavedChangesState) setHasUnsavedChangesState(false);
-      }
+    const userId = userIdRef.current;
+    if (!userId) {
+      console.info("Fetch skipped: No user ID available");
       return;
     }
 
@@ -117,24 +109,19 @@ export const useFetchMeals = ({
     setLoading(false);
   }, [API_BASE_URL, isAuthenticated, showNotification, trackOriginalMeals]);
 
-  if (activeRequestRef.current === requestKey) {
-    activeRequestRef.current = null;
+  const returnObj: UseFetchMealsReturn = {
+    meals,
+    loading,
+    fetchMealsForDate,
+    setMeals,
+    setLoading,
+  };
+
+  if (trackOriginalMeals) {
+    returnObj.originalMeals = originalMeals;
+    returnObj.hasUnsavedChanges = hasUnsavedChanges;
+    returnObj.setHasUnsavedChanges = setHasUnsavedChanges;
   }
-  setLoading(false);
-}
-  }, [
-  API_BASE_URL,
-  isAuthenticated,
-  showNotification,
-  trackOriginalMeals,
-  loading,
-]);
 
-const returnValues: UseFetchMealsReturn = {
-  meals,
-  setMeals,
-  setLoading,
-};
-
-return returnValues;
+  return returnObj;
 };
