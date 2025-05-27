@@ -25,9 +25,7 @@ import { MealDialog } from "../components/meal/MealDialog";
 import { useFetchMeals } from "../hooks/useFetchMeals";
 import { useMealUnsavedChangesManager } from "../hooks/useMealUnsavedChangesManager";
 import { useMealDataManager } from "../hooks/useMealDataManager";
-
-const API_BASE_URL = "http://localhost:5000";
-const MAX_MEALS_ALLOWED = 6;
+import { API_BASE_URL, MAX_MEALS_ALLOWED } from "../file.const";
 
 interface AddEditMealsViewProps {
   onPageLeave?: () => void;

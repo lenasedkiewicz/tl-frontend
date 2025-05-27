@@ -18,8 +18,7 @@ import { formatISO } from "date-fns";
 import { CalendarDatePicker } from "../components/common/CalendarDatePicker";
 import { MealCardItem } from "../components/meal/MealCardItem";
 import { getUserId } from "../components/helperfunctions/AuthHelpers";
-
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../file.const";
 
 export const FindMealsView: React.FC = () => {
   const { isAuthenticated, user, token } = useAuth();
