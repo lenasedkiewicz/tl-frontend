@@ -1,29 +1,52 @@
 import { useState } from "react";
 
-export const useNotification = () => {
-  const [notification, setNotification] = useState({
-    open: false,
-    message: "",
-    type: "info" as "success" | "error" | "warning" | "info",
-  });
+export type NotificationType = 'success' | 'error' | 'info' | 'warning';
+
+export interface NotificationMessage {
+  open: boolean;
+  id: string;
+  message: string;
+  type: NotificationType;
+  duration?: number;
+}
+
+export interface UseNotificationReturn {
+  notifications: NotificationMessage[];
+  showNotification: (message: string, type: NotificationType, duration?: number) => void;
+  hideNotification: (id: string) => void;
+}
+
+export const useNotification = (): UseNotificationReturn => {
+  const [notifications, setNotifications] = useState<NotificationMessage[]>([]);
 
   const showNotification = (
     message: string,
-    type: "success" | "error" | "warning" | "info",
+    type: NotificationType,
+    duration: number = 5000
   ) => {
-    setNotification({
+    const id = Date.now().toString();
+    const newNotification: NotificationMessage = {
       open: true,
+      id,
       message,
       type,
-    });
+      duration
+    };
+
+    setNotifications(prevNotifications => [...prevNotifications, newNotification]);
+
+    if (duration > 0) {
+      setTimeout(() => {
+        hideNotification(id);
+      }, duration);
+    }
   };
 
-  const hideNotification = () => {
-    setNotification({
-      ...notification,
-      open: false,
-    });
+  const hideNotification = (id: string) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.filter(notification => notification.id !== id)
+    );
   };
 
-  return { notification, showNotification, hideNotification };
+  return { notifications, showNotification, hideNotification };
 };
