@@ -77,25 +77,32 @@ export const useMealDataManager = ({
       showNotification("Cannot save meals: User information not available", "error");
       return;
     }
+
     setLoading(true);
     try {
       const userId = getUserId(user);
       const mealsToSave = meals.map((meal) => ({ ...meal, date: selectedDate }));
-      const existingMeals = mealsToSave.filter((meal) => meal._id);
-      const newMeals = mealsToSave.filter((meal) => !meal._id);
-      const savePromises: Promise<any>[] = [];
 
-      existingMeals.forEach((meal) =>
-        savePromises.push(axios.put(`${API_BASE_URL}/meals/${meal._id}/user/${userId}`, meal))
-      );
-      newMeals.forEach((meal) =>
-        savePromises.push(axios.post(`${API_BASE_URL}/meals/user/${userId}`, meal))
-      );
+      const response = await axios.put(`${API_BASE_URL}/meals/batch/user/${userId}`, {
+        meals: mealsToSave
+      });
 
-      await Promise.all(savePromises);
-      showNotification("Meals saved successfully!", "success");
+      const { results, data } = response.data;
+
+      let successMsg = "Meals saved successfully!";
+      if (results.updated > 0) successMsg += ` Updated: ${results.updated}.`;
+      if (results.created > 0) successMsg += ` Created: ${results.created}.`;
+
+      showNotification(successMsg, "success");
+
+      if (results.errors > 0) {
+        console.warn("Some meals had errors:", data.errors);
+        showNotification(`${results.errors} meals had errors. Check console for details.`, "warning");
+      }
+
       fetchMealsForDate(selectedDate);
       setHasUnsavedChanges(false);
+
     } catch (err: any) {
       console.error("Error saving meals:", err);
       const errorMsg = `Failed to save meals. ${err.response?.data?.message || err.message || ""}`;
@@ -104,6 +111,7 @@ export const useMealDataManager = ({
       setLoading(false);
     }
   };
+
 
   const handleDeleteMealClick = (index: number) => {
     setMealToDeleteIndex(index);

@@ -10,6 +10,29 @@ export interface MealData {
   date: string;
 }
 
+export interface BatchMealRequest {
+  meals: MealData[];
+}
+
+export interface BatchMealResponse {
+  success: boolean;
+  results: {
+    updated: number;
+    created: number;
+    errors: number;
+  };
+  data: {
+    updatedMeals: unknown;
+    createdMeals: unknown;
+    errors: Array<{
+      mealId?: string;
+      meal?: string;
+      error: string;
+      operation: 'update' | 'create';
+    }>;
+  };
+}
+
 export interface MealResponse {
   _id: string;
   user: string;
