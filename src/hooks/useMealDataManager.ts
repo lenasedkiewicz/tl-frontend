@@ -1,15 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import axios from "axios";
 import { MealData } from "../interfaces/MealInterfaces";
 import { User } from "../interfaces/AuthInterfaces";
 import { getUserId } from "../components/helperfunctions/AuthHelpers";
 import { UseNotificationReturn } from "./useNotification";
 
-
 interface UseMealDataManagerProps {
   meals: MealData[];
   setMeals: React.Dispatch<React.SetStateAction<MealData[]>>;
-  originalMeals: MealData[] | null;
   selectedDate: string;
   user: User | null;
   isAuthenticated: boolean;
@@ -40,39 +38,43 @@ export const useMealDataManager = ({
   const [mealToDeleteIndex, setMealToDeleteIndex] = useState<number | null>(null);
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
 
-  const handleAddMealClick = () => {
+  const handleAddMealClick = useCallback(() => {
     if (meals.length < MAX_MEALS) {
       setCurrentMealIndex(null);
       setMealDialogOpen(true);
     } else {
       showNotification(`Maximum ${MAX_MEALS} meals are allowed`, "warning");
     }
-  };
+  }, [meals.length, MAX_MEALS, showNotification]);
 
-  const handleEditMealClick = (index: number) => {
+  const handleEditMealClick = useCallback((index: number) => {
     setCurrentMealIndex(index);
     setMealDialogOpen(true);
-  };
+  }, []);
 
-  const handleMealDialogClose = () => {
+  const handleMealDialogClose = useCallback(() => {
     setMealDialogOpen(false);
     setCurrentMealIndex(null);
-  };
+  }, []);
 
-  const handleMealDialogSave = (mealData: MealData) => {
+  const handleMealDialogSave = useCallback((mealData: MealData) => {
     const mealWithDate = { ...mealData, date: selectedDate };
+
     if (currentMealIndex !== null) {
-      const updatedMeals = [...meals];
-      updatedMeals[currentMealIndex] = mealWithDate;
-      setMeals(updatedMeals);
+      setMeals(prevMeals => {
+        const updatedMeals = [...prevMeals];
+        updatedMeals[currentMealIndex] = mealWithDate;
+        return updatedMeals;
+      });
     } else {
-      setMeals([...meals, mealWithDate]);
+      setMeals(prevMeals => [...prevMeals, mealWithDate]);
     }
+
     setHasUnsavedChanges(true);
     handleMealDialogClose();
-  };
+  }, [selectedDate, currentMealIndex, handleMealDialogClose, setMeals, setHasUnsavedChanges]);
 
-  const handleSaveAllMeals = async () => {
+  const handleSaveAllMeals = useCallback(async () => {
     if (!isAuthenticated || !user || !getUserId(user)) {
       showNotification("Cannot save meals: User information not available", "error");
       return;
@@ -110,15 +112,14 @@ export const useMealDataManager = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, user, selectedDate, API_BASE_URL, showNotification, fetchMealsForDate, setLoading, setHasUnsavedChanges, meals]);
 
-
-  const handleDeleteMealClick = (index: number) => {
+  const handleDeleteMealClick = useCallback((index: number) => {
     setMealToDeleteIndex(index);
     setDeleteSingleConfirmOpen(true);
-  };
+  }, []);
 
-  const handleConfirmDeleteSingleMeal = async () => {
+  const handleConfirmDeleteSingleMeal = useCallback(async () => {
     if (mealToDeleteIndex === null || !user) return;
     const meal = meals[mealToDeleteIndex];
     const userId = getUserId(user);
@@ -136,36 +137,34 @@ export const useMealDataManager = ({
         return;
       }
 
-      const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
-      setMeals(updatedMeals);
+      setMeals(prevMeals => prevMeals.filter((_, i) => i !== mealToDeleteIndex));
       showNotification("Meal deleted successfully", "success");
       fetchMealsForDate(selectedDate);
       setLoading(false);
     } else {
-      const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
-      setMeals(updatedMeals);
+      setMeals(prevMeals => prevMeals.filter((_, i) => i !== mealToDeleteIndex));
       showNotification("Meal removed", "info");
       setHasUnsavedChanges(true);
     }
 
     setDeleteSingleConfirmOpen(false);
     setMealToDeleteIndex(null);
-  };
+  }, [mealToDeleteIndex, user, meals, API_BASE_URL, showNotification, fetchMealsForDate, selectedDate, setLoading, setMeals, setHasUnsavedChanges]);
 
-  const cancelDeleteSingleMeal = () => {
+  const cancelDeleteSingleMeal = useCallback(() => {
     setDeleteSingleConfirmOpen(false);
     setMealToDeleteIndex(null);
-  };
+  }, []);
 
-  const handleDeleteAllMealsClick = () => {
+  const handleDeleteAllMealsClick = useCallback(() => {
     if (meals.length > 0) {
       setDeleteAllConfirmOpen(true);
     } else {
       showNotification("No meals to delete for this date.", "info");
     }
-  };
+  }, [meals.length, showNotification]);
 
-  const handleConfirmDeleteAllMeals = async () => {
+  const handleConfirmDeleteAllMeals = useCallback(async () => {
     if (!isAuthenticated || !user || !getUserId(user) || !selectedDate) {
       showNotification("Cannot delete meals: User or date information missing.", "error");
       setDeleteAllConfirmOpen(false);
@@ -188,11 +187,11 @@ export const useMealDataManager = ({
     fetchMealsForDate(selectedDate);
     setLoading(false);
     setDeleteAllConfirmOpen(false);
-  };
+  }, [isAuthenticated, user, selectedDate, API_BASE_URL, showNotification, fetchMealsForDate, setLoading]);
 
-  const cancelDeleteAllMeals = () => {
+  const cancelDeleteAllMeals = useCallback(() => {
     setDeleteAllConfirmOpen(false);
-  };
+  }, []);
 
   return {
     mealDialogOpen,
@@ -202,12 +201,10 @@ export const useMealDataManager = ({
     handleMealDialogClose,
     handleMealDialogSave,
     handleSaveAllMeals,
-
     deleteSingleConfirmOpen,
     handleDeleteMealClick,
     handleConfirmDeleteSingleMeal,
     cancelDeleteSingleMeal,
-
     deleteAllConfirmOpen,
     handleDeleteAllMealsClick,
     handleConfirmDeleteAllMeals,
