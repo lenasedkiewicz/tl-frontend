@@ -123,29 +123,31 @@ export const useMealDataManager = ({
     const meal = meals[mealToDeleteIndex];
     const userId = getUserId(user);
 
-    // TO DO: rethink this part
     if (meal._id && userId) {
       setLoading(true);
+
       try {
         await axios.delete(`${API_BASE_URL}/meals/${meal._id}/user/${userId}`);
-        // fetchMealsForDate(selectedDate); // To get the fresh list from DB
-        const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
-        setMeals(updatedMeals); // Optimistic update or rely on fetch
-        showNotification("Meal deleted successfully", "success");
-        // setHasUnsavedChanges(true); // Deleting an existing meal is a change to be saved or re-fetched
-        // Let fetchMealsForDate handle resetting hasUnsavedChanges via originalMeals update
-        fetchMealsForDate(selectedDate);
       } catch (err: any) {
         showNotification(`Failed to delete meal: ${err.message || "Unknown error"}`, "error");
-      } finally {
         setLoading(false);
+        setDeleteSingleConfirmOpen(false);
+        setMealToDeleteIndex(null);
+        return;
       }
+
+      const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
+      setMeals(updatedMeals);
+      showNotification("Meal deleted successfully", "success");
+      fetchMealsForDate(selectedDate);
+      setLoading(false);
     } else {
       const updatedMeals = meals.filter((_, i) => i !== mealToDeleteIndex);
       setMeals(updatedMeals);
       showNotification("Meal removed", "info");
       setHasUnsavedChanges(true);
     }
+
     setDeleteSingleConfirmOpen(false);
     setMealToDeleteIndex(null);
   };
