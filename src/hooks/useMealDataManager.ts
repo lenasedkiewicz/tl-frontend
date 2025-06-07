@@ -105,9 +105,10 @@ export const useMealDataManager = ({
       fetchMealsForDate(selectedDate);
       setHasUnsavedChanges(false);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error saving meals:", err);
-      const errorMsg = `Failed to save meals. ${err.response?.data?.message || err.message || ""}`;
+      const error = err as Error & { response?: { data?: { message?: string } } };
+      const errorMsg = `Failed to save meals. ${error.response?.data?.message || error.message || ""}`;
       showNotification(errorMsg, "error");
     } finally {
       setLoading(false);
@@ -129,8 +130,9 @@ export const useMealDataManager = ({
 
       try {
         await axios.delete(`${API_BASE_URL}/meals/${meal._id}/user/${userId}`);
-      } catch (err: any) {
-        showNotification(`Failed to delete meal: ${err.message || "Unknown error"}`, "error");
+      } catch (err: unknown) {
+        const error = err as Error & { response?: { data?: { message?: string } } };
+        showNotification(`Failed to delete meal: ${error.message || "Unknown error"}`, "error");
         setLoading(false);
         setDeleteSingleConfirmOpen(false);
         setMealToDeleteIndex(null);
@@ -175,8 +177,9 @@ export const useMealDataManager = ({
 
     try {
       await axios.delete(`${API_BASE_URL}/meals/user/${userId}/date/${selectedDate}`);
-    } catch (err: any) {
-      const errorMsg = `Failed to delete all meals. ${err.response?.data?.message || err.message || ""}`;
+    } catch (err: unknown) {
+      const error = err as Error & { response?: { data?: { message?: string } } };
+      const errorMsg = `Failed to delete all meals. ${error.response?.data?.message || error.message || ""}`;
       showNotification(errorMsg, "error");
       setLoading(false);
       setDeleteAllConfirmOpen(false);
