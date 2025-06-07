@@ -172,18 +172,22 @@ export const useMealDataManager = ({
       return;
     }
     setLoading(true);
+    const userId = getUserId(user);
+
     try {
-      const userId = getUserId(user);
       await axios.delete(`${API_BASE_URL}/meals/user/${userId}/date/${selectedDate}`);
-      showNotification("All meals for this date deleted successfully", "success");
-      fetchMealsForDate(selectedDate);
     } catch (err: any) {
       const errorMsg = `Failed to delete all meals. ${err.response?.data?.message || err.message || ""}`;
       showNotification(errorMsg, "error");
-    } finally {
       setLoading(false);
       setDeleteAllConfirmOpen(false);
+      return;
     }
+
+    showNotification("All meals for this date deleted successfully", "success");
+    fetchMealsForDate(selectedDate);
+    setLoading(false);
+    setDeleteAllConfirmOpen(false);
   };
 
   const cancelDeleteAllMeals = () => {
