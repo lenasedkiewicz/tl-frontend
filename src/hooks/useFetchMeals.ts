@@ -29,13 +29,13 @@ export const useFetchMeals = ({
 
   const fetchMealsForDate = useCallback(async (date: string) => {
     if (!isAuthenticated || !date) {
-      console.log("Fetch skipped: Missing authentication or date");
+      console.info("Fetch skipped: Missing authentication or date");
       return;
     }
 
     const userId = userIdRef.current;
     if (!userId) {
-      console.log("Fetch skipped: No user ID available");
+      console.info("Fetch skipped: No user ID available");
       return;
     }
 
